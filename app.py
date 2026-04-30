@@ -192,7 +192,17 @@ def article(article_id):
 
 if __name__ == '__main__':
     with app.app_context():
+        # This creates all tables (User, Article, Category, Comment)
         db.create_all()
+        
+        # This adds a 'General' category if the database is empty
+        # This prevents the 'Internal Server Error' on the home page
+        if not Category.query.first():
+            default_category = Category(name="General News")
+            db.session.add(default_category)
+            db.session.commit()
+            print("Database initialized and default category created!")
+
     # RENDER FIX: Use the port provided by Render, or default to 5000
     port = int(os.environ.get("PORT", 5000))
     app.run(host='0.0.0.0', port=port)
