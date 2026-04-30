@@ -96,16 +96,6 @@ def edit_comment(comment_id):
 def donate():
     return render_template('donate.html')
 
-@app.before_first_request
-def create_tables():
-    db.create_all()
-
-    if not Category.query.first():
-        db.session.add(Category(name="Business"))
-        db.session.add(Category(name="Politics"))
-        db.session.add(Category(name="Education"))
-        db.session.commit()
-
 @app.route('/register', methods=['GET', 'POST'])
 def register():
     if request.method == 'POST':
@@ -184,10 +174,6 @@ def search():
     query = request.args.get('q')
     results = Article.query.filter((Article.title.like(f'%{query}%')) | (Article.content.like(f'%{query}%'))).all() if query else []
     return render_template('index.html', articles=results, search_query=query)
-
-@app.before_first_request
-def create_tables():
-    db.create_all()
 
 @app.route('/article/<int:article_id>', methods=['GET', 'POST'])
 def article(article_id):
