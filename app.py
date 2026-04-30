@@ -1,46 +1,48 @@
 import os
+import logging
 from werkzeug.utils import secure_filename
 from flask import Flask, render_template, request, redirect, url_for, flash, session
 from flask_sqlalchemy import SQLAlchemy
 from datetime import datetime
 from werkzeug.security import generate_password_hash, check_password_hash
 
+# ------------------ APP SETUP ------------------
 app = Flask(__name__)
 
-# SECURITY: Use an environment variable for the secret key on Render
-app.secret_key = os.environ.get('SECRET_KEY', 'kilgoris_news_super_secret_123')
+# Logging (helps debug Render errors)
+logging.basicConfig(level=logging.DEBUG)
 
-# Configure where to save images (Updated for better path handling)
+# Secret key
+app.secret_key = os.environ.get('SECRET_KEY', 'dev_secret_key')
+
+# ------------------ FILE UPLOAD ------------------
 UPLOAD_FOLDER = os.path.join(os.path.dirname(os.path.abspath(__file__)), 'static/uploads')
 ALLOWED_EXTENSIONS = {'png', 'jpg', 'jpeg', 'gif'}
+
 app.config['UPLOAD_FOLDER'] = UPLOAD_FOLDER
 
-# Ensure upload folder exists
 if not os.path.exists(UPLOAD_FOLDER):
     os.makedirs(UPLOAD_FOLDER)
 
-# Helper function to check file types
 def allowed_file(filename):
     return '.' in filename and filename.rsplit('.', 1)[1].lower() in ALLOWED_EXTENSIONS
 
-# --- DATABASE CONNECTION (AUTO-SWITCH LOGIC) ---
+# ------------------ DATABASE CONFIG ------------------
 database_url = os.environ.get('DATABASE_URL')
 
-if database_url:
-    # If on Render, use PostgreSQL (fixes the postgres:// vs postgresql:// issue)
-    if database_url.startswith("postgres://"):
-        database_url = database_url.replace("postgres://", "postgresql://", 1)
-    app.config['SQLALCHEMY_DATABASE_URI'] = database_url
-else:
-    # If on your local computer, use your MySQL
-    app.config['SQLALCHEMY_DATABASE_URI'] = 'mysql+mysqlconnector://root:Leteipa2005@localhost/kilgoris_news'
+if not database_url:
+    raise ValueError("❌ DATABASE_URL is not set in Render environment variables")
 
+# Fix postgres:// issue
+if database_url.startswith("postgres://"):
+    database_url = database_url.replace("postgres://", "postgresql://", 1)
+
+app.config['SQLALCHEMY_DATABASE_URI'] = database_url
 app.config['SQLALCHEMY_TRACK_MODIFICATIONS'] = False
 
 db = SQLAlchemy(app)
 
-# --- Database Models ---
-
+# ------------------ MODELS ------------------
 class User(db.Model):
     id = db.Column(db.Integer, primary_key=True)
     fullname = db.Column(db.String(100), nullable=False)
@@ -71,26 +73,12 @@ class Comment(db.Model):
     article_id = db.Column(db.Integer, db.ForeignKey('article.id'), nullable=False)
     user_id = db.Column(db.Integer, db.ForeignKey('user.id'), nullable=False)
 
-# --- Routes ---
-
+# ------------------ ROUTES ------------------
 @app.route('/')
 def home():
     categories = Category.query.all()
     latest_articles = Article.query.order_by(Article.date_posted.desc()).limit(5).all()
     return render_template('index.html', categories=categories, articles=latest_articles)
-
-@app.route('/edit_comment/<int:comment_id>', methods=['POST'])
-def edit_comment(comment_id):
-    if 'user_id' not in session:
-        return redirect(url_for('login'))
-    comment = Comment.query.get_or_404(comment_id)
-    if comment.user_id != session['user_id']:
-        return "You do not have permission to edit this comment", 403
-    new_body = request.form.get('comment_body')
-    if new_body:
-        comment.body = new_body
-        db.session.commit()
-    return redirect(url_for('article', article_id=comment.article_id))
 
 @app.route('/donate')
 def donate():
@@ -103,15 +91,19 @@ def register():
         email = request.form.get('email')
         location = request.form.get('location')
         password = request.form.get('password')
-        user_exists = User.query.filter_by(email=email).first()
-        if user_exists:
+
+        if User.query.filter_by(email=email).first():
             flash("Email already registered!", "danger")
             return redirect(url_for('register'))
-        hashed_pw = generate_password_hash(password, method='pbkdf2:sha256')
+
+        hashed_pw = generate_password_hash(password)
         new_user = User(fullname=fullname, email=email, location=location, password=hashed_pw)
+
         db.session.add(new_user)
         db.session.commit()
+
         return redirect(url_for('login'))
+
     return render_template('register.html')
 
 @app.route('/login', methods=['GET', 'POST'])
@@ -119,24 +111,28 @@ def login():
     if request.method == 'POST':
         email = request.form.get('email')
         password = request.form.get('password')
+
         user = User.query.filter_by(email=email).first()
+
         if user and check_password_hash(user.password, password):
             session['user_id'] = user.id
             session['user_name'] = user.fullname
             return redirect(url_for('home'))
-        else:
-            flash("Login Failed. Please check email/password.", "danger")
+
+        flash("Invalid email or password", "danger")
+
     return render_template('login.html')
 
 @app.route('/logout')
 def logout():
-    session.clear() 
+    session.clear()
     return redirect(url_for('home'))
 
 @app.route('/admin/dashboard')
 def admin_dashboard():
     if 'user_id' not in session:
         return redirect(url_for('login'))
+
     articles = Article.query.order_by(Article.date_posted.desc()).all()
     return render_template('admin_dashboard.html', articles=articles)
 
@@ -144,19 +140,31 @@ def admin_dashboard():
 def create_article():
     if 'user_id' not in session:
         return redirect(url_for('login'))
+
     if request.method == 'POST':
         title = request.form.get('title')
         content = request.form.get('content')
         category_id = request.form.get('category_id')
+
         file = request.files.get('image')
         filename = 'default.jpg'
+
         if file and allowed_file(file.filename):
             filename = secure_filename(file.filename)
             file.save(os.path.join(app.config['UPLOAD_FOLDER'], filename))
-        new_article = Article(title=title, content=content, category_id=category_id, image_file=filename)
+
+        new_article = Article(
+            title=title,
+            content=content,
+            category_id=category_id,
+            image_file=filename
+        )
+
         db.session.add(new_article)
         db.session.commit()
+
         return redirect(url_for('admin_dashboard'))
+
     categories = Category.query.all()
     return render_template('create_article.html', categories=categories)
 
@@ -164,41 +172,56 @@ def create_article():
 def delete_article(article_id):
     if 'user_id' not in session:
         return redirect(url_for('login'))
+
     article = Article.query.get_or_404(article_id)
+
     db.session.delete(article)
     db.session.commit()
-    return redirect(url_for('admin_dashboard'))
 
-@app.route('/search')
-def search():
-    query = request.args.get('q')
-    results = Article.query.filter((Article.title.like(f'%{query}%')) | (Article.content.like(f'%{query}%'))).all() if query else []
-    return render_template('index.html', articles=results, search_query=query)
+    return redirect(url_for('admin_dashboard'))
 
 @app.route('/article/<int:article_id>', methods=['GET', 'POST'])
 def article(article_id):
     article = Article.query.get_or_404(article_id)
+
     if request.method == 'POST':
         if 'user_id' not in session:
             return redirect(url_for('login'))
+
         comment_body = request.form.get('comment_body')
+
         if comment_body:
-            new_comment = Comment(body=comment_body, article_id=article.id, user_id=session['user_id'])
+            new_comment = Comment(
+                body=comment_body,
+                article_id=article.id,
+                user_id=session['user_id']
+            )
+
             db.session.add(new_comment)
             db.session.commit()
+
             return redirect(url_for('article', article_id=article.id))
-    trending = Article.query.filter(Article.category_id == article.category_id, Article.id != article_id).limit(3).all()
+
+    trending = Article.query.filter(
+        Article.category_id == article.category_id,
+        Article.id != article_id
+    ).limit(3).all()
+
     return render_template('article.html', article=article, trending=trending)
 
-# --- INITIALIZATION BLOCK ---
-with app.app_context():
-    db.create_all()
-    if not Category.query.first():
-        default_category = Category(name="General News")
-        db.session.add(default_category)
-        db.session.commit()
-        print("Database initialized and default category created!")
+# ------------------ SAFE DB INIT ------------------
+@app.before_first_request
+def initialize_database():
+    try:
+        db.create_all()
+        if not Category.query.first():
+            db.session.add(Category(name="General News"))
+            db.session.commit()
+            print("✅ Database initialized")
+    except Exception as e:
+        print("❌ DB INIT ERROR:", e)
 
+# ------------------ RUN ------------------
 if __name__ == '__main__':
     port = int(os.environ.get("PORT", 5000))
     app.run(host='0.0.0.0', port=port)
