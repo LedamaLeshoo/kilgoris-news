@@ -128,6 +128,10 @@ def logout():
     session.clear()
     return redirect(url_for('home'))
 
+@app.route('/')
+def home():
+    return render_template('index.html')
+
 @app.route('/admin/dashboard')
 def admin_dashboard():
     if 'user_id' not in session:
