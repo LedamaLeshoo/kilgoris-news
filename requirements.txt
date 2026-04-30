@@ -1,6 +1,6 @@
 flask
 flask-sqlalchemy
 mysql-connector-python
+psycopg2-binary
 gunicorn
 werkzeug
-psycopg2-binary
