@@ -175,6 +175,10 @@ def search():
     results = Article.query.filter((Article.title.like(f'%{query}%')) | (Article.content.like(f'%{query}%'))).all() if query else []
     return render_template('index.html', articles=results, search_query=query)
 
+@app.before_first_request
+def create_tables():
+    db.create_all()
+
 @app.route('/article/<int:article_id>', methods=['GET', 'POST'])
 def article(article_id):
     article = Article.query.get_or_404(article_id)
