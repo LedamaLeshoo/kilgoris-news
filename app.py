@@ -210,8 +210,7 @@ def article(article_id):
     return render_template('article.html', article=article, trending=trending)
 
 # ------------------ SAFE DB INIT ------------------
-@app.before_first_request
-def initialize_database():
+with app.app_context():
     try:
         db.create_all()
         if not Category.query.first():
@@ -219,7 +218,7 @@ def initialize_database():
             db.session.commit()
             print("✅ Database initialized")
     except Exception as e:
-        print("❌ DB INIT ERROR:", e)
+        print("❌ DB ERROR:", e)
 
 # ------------------ RUN ------------------
 if __name__ == '__main__':
