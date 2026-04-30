@@ -1,0 +1,39 @@
+{% extends "base.html" %}
+
+{% block content %}
+<div class="auth-container">
+    <div class="auth-card" style="max-width: 800px;">
+        <h2>Publish New Article</h2>
+        <p>Post the latest updates to Kilgoris News</p>
+        
+        <form action="/admin/post" method="POST" enctype="multipart/form-data">
+            <div class="form-group">
+                <label>Article Title</label>
+                <input type="text" name="title" required placeholder="Enter a catchy headline">
+            </div>
+
+            <div class="form-group">
+                <label>Article Image</label>
+                <input type="file" name="image" accept="image/*" style="padding: 10px 0;">
+                <small style="color: #666;">Select a high-quality photo for the story.</small>
+            </div>
+            
+            <div class="form-group">
+                <label>Category</label>
+                <select name="category_id">
+                    {% for cat in categories %}
+                    <option value="{{ cat.id }}">{{ cat.name }}</option>
+                    {% endfor %}
+                </select>
+            </div>
+
+            <div class="form-group">
+                <label>Content</label>
+                <textarea name="content" rows="10" required style="padding:12px; border:1px solid #ddd; border-radius:4px; font-family: inherit;"></textarea>
+            </div>
+
+            <button type="submit" class="btn-signup" style="width: 100%; border: none; margin: 20px 0;">Publish Article</button>
+        </form>
+    </div>
+</div>
+{% endblock %}

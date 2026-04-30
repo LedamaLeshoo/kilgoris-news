@@ -1,0 +1,100 @@
+{% extends "base.html" %}
+
+{% block content %}
+<article class="full-story">
+    <div class="category-tag">{{ article.category.name }}</div>
+    <h1>{{ article.title }}</h1>
+    <p class="meta">Published on {{ article.date_posted.strftime('%B %d, %Y at %H:%M') }}</p>
+    
+    <hr>
+    
+    <div class="article-body">
+        {{ article.content }}
+        <div class="share-section">
+    <h3>Share this story:</h3>
+    <div class="share-buttons">
+        <a href="https://api.whatsapp.com/send?text=Check out this news on Kilgoris News: {{ article.title }} - {{ request.url_root | trim }}/article/{{ article.id }}" 
+           target="_blank" class="share-btn whatsapp">WhatsApp</a>
+
+        <a href="https://www.facebook.com/sharer/sharer.php?u={{ request.url_root }}/article/{{ article.id }}" 
+           target="_blank" class="share-btn facebook">Facebook</a>
+
+        <a href="https://twitter.com/intent/tweet?text={{ article.title }}&url={{ request.url_root }}/article/{{ article.id }}" 
+           target="_blank" class="share-btn x-twitter">X</a>
+
+        <button onclick="copyToClipboard()" class="share-btn copy">Copy Link</button>
+    </div>
+<section class="comments-section" style="margin-top: 50px; border-top: 2px solid #eee; padding-top: 30px;">
+    <h3>Discussion ({{ article.comments|length }})</h3>
+
+    {% if session.get('user_id') %}
+        <form action="{{ url_for('article', article_id=article.id) }}" method="POST" style="margin-bottom: 40px;">
+            <textarea name="comment_body" rows="3" required placeholder="Add to the conversation..." 
+                      style="width: 100%; padding: 15px; border: 1px solid #ddd; border-radius: 8px; font-family: inherit; margin-bottom: 10px;"></textarea>
+            <button type="submit" class="btn-signup" style="border:none; cursor:pointer;">Post Comment</button>
+        </form>
+    {% else %}
+        <p style="background: #f0f0f0; padding: 15px; border-radius: 8px; text-align: center;">
+            Please <a href="{{ url_for('login') }}" style="color: var(--primary-green); font-weight: bold;">Login</a> to join the discussion.
+        </p>
+    {% endif %}
+
+    <div class="comments-list">
+        {% for comment in article.comments|sort(attribute='date_posted', reverse=True) %}
+    <div class="comment-item" style="background: white; padding: 15px; border-radius: 8px; margin-bottom: 15px; box-shadow: 0 2px 5px rgba(0,0,0,0.05);">
+        <div style="display: flex; justify-content: space-between; margin-bottom: 8px;">
+            <strong style="color: var(--primary-green);">{{ comment.author.fullname }}</strong>
+            <small style="color: #888;">{{ comment.date_posted.strftime('%d %b, %Y') }}</small>
+        </div>
+        
+        <!-- The Comment Text -->
+        <p id="comment-text-{{ comment.id }}" style="margin: 0; color: #444;">{{ comment.body }}</p>
+
+        <!-- The Hidden Edit Form -->
+        {% if session.get('user_id') == comment.user_id %}
+            <div id="edit-form-{{ comment.id }}" style="display: none; margin-top: 10px;">
+                <form action="{{ url_for('edit_comment', comment_id=comment.id) }}" method="POST">
+                    <textarea name="comment_body" rows="2" style="width: 100%; padding: 10px; border-radius: 4px; border: 1px solid #ddd;">{{ comment.body }}</textarea>
+                    <button type="submit" class="btn-signup" style="padding: 5px 15px; font-size: 0.8rem; border: none; margin-top: 5px;">Save Changes</button>
+                    <button type="button" onclick="toggleEdit('{{ comment.id }}')" style="background:none; border:none; color: #888; cursor:pointer; font-size: 0.8rem;">Cancel</button>
+                </form>
+            </div>
+
+            <!-- Edit Trigger Button -->
+            <button onclick="toggleEdit('{{ comment.id }}')" style="background: none; border: none; color: var(--primary-green); cursor: pointer; font-size: 0.8rem; padding: 0; margin-top: 10px; font-weight: bold;">
+                Edit Comment
+            </button>
+        {% endif %}
+    </div>
+{% endfor %}
+
+<!-- JavaScript to show/hide the edit form -->
+<script>
+function toggleEdit(commentId) {
+    var text = document.getElementById('comment-text-' + commentId);
+    var form = document.getElementById('edit-form-' + commentId);
+    
+    if (form.style.display === "none") {
+        form.style.display = "block";
+        text.style.display = "none";
+    } else {
+        form.style.display = "none";
+        text.style.display = "block";
+    }
+}
+</script>
+    </div>
+    
+    <div class="back-link">
+        <a href="/">← Back to All News</a>
+    </div>
+</article>
+
+<style>
+    .full-story { max-width: 800px; margin: 40px auto; background: white; padding: 40px; border-radius: 8px; box-shadow: 0 4px 20px rgba(0,0,0,0.08); }
+    .full-story h1 { font-size: 2.5rem; color: #1a6b3c; margin-bottom: 20px; line-height: 1.2; }
+    .article-body { font-size: 1.2rem; line-height: 1.8; color: #333; white-space: pre-wrap; }
+    .back-link { margin-top: 40px; border-top: 1px solid #eee; padding-top: 20px; }
+    .back-link a { text-decoration: none; color: #1a6b3c; font-weight: bold; }
+</style>
+{% endblock %}

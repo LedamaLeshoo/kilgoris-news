@@ -1,0 +1,37 @@
+{% extends "base.html" %}
+
+{% block content %}
+<div class="auth-container">
+    <div class="auth-card">
+        <h2>Welcome Back</h2>
+        <p>Login to your Kilgoris News account</p>
+        
+        <form action="/login" method="POST">
+            <div class="form-group">
+                <label>Email Address</label>
+                <input type="email" name="email" required placeholder="name@example.com">
+            </div>
+
+            <div class="form-group">
+                <label>Password</label>
+                <input type="password" name="password" required>
+            </div>
+
+            <button type="submit" class="btn-signup" style="width: 100%; border: none; margin: 20px 0;">Login</button>
+        </form>
+        
+        <p class="auth-footer">Don't have an account? <a href="{{ url_for('register') }}">Sign up here</a></p>
+    </div>
+</div>
+
+<style>
+    /* Reusing the same styling from your register page for consistency */
+    .auth-container { display: flex; justify-content: center; padding: 50px 0; }
+    .auth-card { background: white; padding: 40px; border-radius: 8px; box-shadow: 0 4px 15px rgba(0,0,0,0.1); width: 100%; max-width: 450px; }
+    .auth-card h2 { color: #1a6b3c; margin-bottom: 10px; }
+    .form-group { margin-bottom: 15px; display: flex; flex-direction: column; }
+    .form-group label { font-weight: bold; margin-bottom: 5px; color: #333; }
+    .form-group input { padding: 12px; border: 1px solid #ddd; border-radius: 4px; font-size: 1rem; }
+    .auth-footer { text-align: center; margin-top: 20px; font-size: 0.9rem; }
+</style>
+{% endblock %}

@@ -1,0 +1,28 @@
+{% extends "base.html" %}
+
+{% block content %}
+<div class="auth-container" style="text-align: center; max-width: 600px; margin: 0 auto;">
+    <div class="auth-card">
+        <h2 style="color: var(--primary-green);">Support Kilgoris News</h2>
+        <p>Your contributions help us keep Narok County informed with verified, independent news.</p>
+        
+        <hr style="margin: 20px 0; border: 0; border-top: 1px solid #eee;">
+
+        <div class="payment-option" style="margin-bottom: 30px;">
+            <h3>Option 1: M-PESA</h3>
+             <p><strong>Phone no:</strong> 0717379639 (Mpesa)</p>
+             <p>OR</p>
+            <p><strong>Paybill:</strong> 247247 (Equity)</p>
+            <p><strong>Account:</strong> 123456789</p>
+            <p><em>OR Till Number: 556677</em></p>
+        </div>
+
+        <div class="payment-option">
+            <h3>Option 2: PayPal / Card</h3>
+            <a href="https://www.paypal.com/donate?hosted_button_id=YOUR_ID" target="_blank" class="btn-signup">
+                Donate via PayPal
+            </a>
+        </div>
+    </div>
+</div>
+{% endblock %}

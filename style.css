@@ -1,0 +1,283 @@
+:root {
+    --primary-green: #1a6b3c;
+    --accent-gold: #d4a017;
+    --text-dark: #1a1a1a;
+    --white: #ffffff;
+}
+
+/* Layout Fixes */
+html, body {
+    height: 100%;
+    margin: 0;
+}
+
+body {
+    display: flex;
+    flex-direction: column;
+    font-family: 'Segoe UI', Roboto, Helvetica, Arial, sans-serif;
+    background-color: #f9f9f9;
+    line-height: 1.6;
+}
+
+main {
+    flex: 1;
+    padding: 40px 0;
+}
+
+.container {
+    max-width: 1300px; /* Slightly wider to fit all new features */
+    margin: 0 auto;
+    padding: 0 20px;
+}
+
+/* --- Breaking News Ticker --- */
+.ticker-wrapper {
+    background: var(--primary-green);
+    color: white;
+    display: flex;
+    font-size: 0.95rem;
+    font-weight: 500;
+    overflow: hidden;
+}
+
+.ticker-label {
+    background: var(--accent-gold);
+    padding: 12px 25px;
+    font-weight: 900;
+    text-transform: uppercase;
+    letter-spacing: 1px;
+    z-index: 10;
+}
+
+.ticker-content {
+    padding: 12px;
+    flex: 1;
+    white-space: nowrap;
+    overflow: hidden;
+    position: relative;
+}
+
+.ticker-content span {
+    display: inline-block;
+    padding-right: 100%;
+    animation: marquee-left-to-right 20s linear infinite;
+}
+
+@keyframes marquee-left-to-right {
+    0% { transform: translateX(-100%); }
+    100% { transform: translateX(100%); }
+}
+
+/* --- Header & Navigation (Fixes the Squeezing) --- */
+header {
+    background: var(--white);
+    border-bottom: 4px solid var(--accent-gold);
+    padding: 15px 0; /* Slightly tighter padding */
+}
+
+header .container {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    gap: 10px; /* Space between the 4 main groups */
+}
+
+.logo {
+    font-size: 1.8rem; /* Scaled down slightly to fit everything */
+    font-weight: 900;
+    color: var(--primary-green);
+    letter-spacing: -1px;
+    flex-shrink: 0; /* Don't let the logo shrink */
+}
+
+.monogram {
+    background: var(--primary-green);
+    color: var(--accent-gold);
+    padding: 4px 10px;
+    border-radius: 6px;
+    margin-right: 5px;
+}
+
+/* Navigation Menu - Reduced gap and font size slightly */
+.nav-menu {
+    list-style: none;
+    display: flex;
+    gap: 15px; 
+    margin: 0;
+    padding: 0;
+}
+
+.nav-menu a {
+    text-decoration: none;
+    color: var(--text-dark);
+    font-weight: 700;
+    font-size: 1.05rem;
+    transition: color 0.3s ease;
+}
+
+.nav-menu a:hover {
+    color: var(--primary-green);
+}
+
+/* Search Bar Styling */
+.search-form {
+    display: flex;
+    align-items: center;
+    margin: 0 10px;
+}
+
+.search-input {
+    padding: 6px 12px;
+    border: 1px solid #ddd;
+    border-radius: 4px 0 0 4px;
+    outline: none;
+    width: 140px; /* Controlled width */
+}
+
+.search-btn {
+    background: var(--accent-gold);
+    border: none;
+    padding: 6px 10px;
+    border-radius: 0 4px 4px 0;
+    cursor: pointer;
+    font-size: 0.9rem;
+}
+
+/* Auth Buttons and Greeting */
+.nav-auth {
+    display: flex;
+    gap: 12px;
+    align-items: center;
+    flex-shrink: 0;
+}
+
+.user-greeting {
+    font-weight: 800;
+    color: var(--primary-green);
+    font-size: 0.95rem;
+    white-space: nowrap; /* Prevents name from dropping to next line */
+}
+
+.btn-login {
+    text-decoration: none;
+    color: var(--primary-green);
+    font-weight: 800;
+    font-size: 1rem;
+}
+
+.btn-signup {
+    text-decoration: none;
+    background: var(--primary-green);
+    color: var(--accent-gold) !important;
+    padding: 10px 18px;
+    border-radius: 6px;
+    font-weight: 800;
+    font-size: 1rem;
+}
+
+/* Auth Pages & Footer */
+.auth-card h2 {
+    font-size: 2rem;
+    font-weight: 800;
+    color: var(--primary-green);
+    margin-bottom: 15px;
+}
+
+footer {
+    background: var(--text-dark);
+    color: white;
+    text-align: center;
+    padding: 2rem 0;
+    font-weight: 500;
+    letter-spacing: 0.5px;
+}
+
+/* --- Enhanced Footer Styles --- */
+.footer-grid {
+    display: flex;
+    justify-content: space-between;
+    align-items: flex-start;
+    flex-wrap: wrap;
+    gap: 40px;
+    text-align: left;
+    margin-bottom: 30px;
+}
+
+.footer-section {
+    flex: 1;
+    min-width: 250px;
+}
+
+.footer-section h4 {
+    color: var(--accent-gold);
+    text-transform: uppercase;
+    font-size: 1rem;
+    margin-bottom: 15px;
+}
+
+.social-links {
+    display: flex;
+    gap: 15px;
+    list-style: none;
+    padding: 0;
+}
+
+.social-links a {
+    color: white;
+    font-size: 1.5rem;
+    text-decoration: none;
+    transition: color 0.3s;
+}
+
+.social-links a:hover {
+    color: var(--accent-gold);
+}
+
+.footer-donate-btn {
+    background: #27ae60;
+    color: white;
+    padding: 10px 20px;
+    border-radius: 4px;
+    text-decoration: none;
+    font-weight: bold;
+    display: inline-block;
+    margin-top: 10px;
+}
+.share-section {
+    margin: 30px 0;
+    padding-top: 20px;
+    border-top: 1px solid #eee;
+}
+
+.share-section h3 {
+    font-size: 1rem;
+    color: #666;
+    margin-bottom: 15px;
+}
+
+.share-buttons {
+    display: flex;
+    gap: 10px;
+    flex-wrap: wrap;
+}
+
+.share-btn {
+    padding: 8px 16px;
+    border-radius: 4px;
+    text-decoration: none;
+    color: white !important;
+    font-weight: bold;
+    font-size: 0.9rem;
+    transition: opacity 0.3s;
+    border: none;
+    cursor: pointer;
+}
+
+.whatsapp { background-color: #25D366; }
+.facebook { background-color: #1877F2; }
+.x-twitter { background-color: #000000; }
+.copy { background-color: #7f8c8d; }
+
+.share-btn:hover {
+    opacity: 0.8;
+}
