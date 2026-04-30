@@ -7,11 +7,11 @@ from werkzeug.security import generate_password_hash, check_password_hash
 
 app = Flask(__name__)
 
-# SECURITY: Use an environment variable for the secret key on Render, or a default for local
+# SECURITY: Use an environment variable for the secret key on Render
 app.secret_key = os.environ.get('SECRET_KEY', 'kilgoris_news_super_secret_123')
 
-# Configure where to save images
-UPLOAD_FOLDER = 'static/uploads'
+# Configure where to save images (Updated for better path handling)
+UPLOAD_FOLDER = os.path.join(os.path.dirname(os.path.abspath(__file__)), 'static/uploads')
 ALLOWED_EXTENSIONS = {'png', 'jpg', 'jpeg', 'gif'}
 app.config['UPLOAD_FOLDER'] = UPLOAD_FOLDER
 
@@ -190,19 +190,15 @@ def article(article_id):
     trending = Article.query.filter(Article.category_id == article.category_id, Article.id != article_id).limit(3).all()
     return render_template('article.html', article=article, trending=trending)
 
-if __name__ == '__main__':
-    with app.app_context():
-        # This creates all tables (User, Article, Category, Comment)
-        db.create_all()
-        
-        # This adds a 'General' category if the database is empty
-        # This prevents the 'Internal Server Error' on the home page
-        if not Category.query.first():
-            default_category = Category(name="General News")
-            db.session.add(default_category)
-            db.session.commit()
-            print("Database initialized and default category created!")
+# --- INITIALIZATION BLOCK ---
+with app.app_context():
+    db.create_all()
+    if not Category.query.first():
+        default_category = Category(name="General News")
+        db.session.add(default_category)
+        db.session.commit()
+        print("Database initialized and default category created!")
 
-    # RENDER FIX: Use the port provided by Render, or default to 5000
+if __name__ == '__main__':
     port = int(os.environ.get("PORT", 5000))
     app.run(host='0.0.0.0', port=port)
