@@ -9,10 +9,8 @@ from werkzeug.security import generate_password_hash, check_password_hash
 # ------------------ APP SETUP ------------------
 app = Flask(__name__)
 
-# Logging (helps debug Render errors)
 logging.basicConfig(level=logging.DEBUG)
 
-# Secret key
 app.secret_key = os.environ.get('SECRET_KEY', 'dev_secret_key')
 
 # ------------------ FILE UPLOAD ------------------
@@ -27,13 +25,12 @@ if not os.path.exists(UPLOAD_FOLDER):
 def allowed_file(filename):
     return '.' in filename and filename.rsplit('.', 1)[1].lower() in ALLOWED_EXTENSIONS
 
-# ------------------ DATABASE CONFIG ------------------
+# ------------------ DATABASE ------------------
 database_url = os.environ.get('DATABASE_URL')
 
 if not database_url:
-    raise ValueError("❌ DATABASE_URL is not set in Render environment variables")
+    raise ValueError("DATABASE_URL is not set")
 
-# Fix postgres:// issue
 if database_url.startswith("postgres://"):
     database_url = database_url.replace("postgres://", "postgresql://", 1)
 
@@ -74,15 +71,19 @@ class Comment(db.Model):
     user_id = db.Column(db.Integer, db.ForeignKey('user.id'), nullable=False)
 
 # ------------------ ROUTES ------------------
+
+# ✅ ONLY ONE HOME ROUTE (FIXED)
 @app.route('/')
 def home():
     categories = Category.query.all()
     latest_articles = Article.query.order_by(Article.date_posted.desc()).limit(5).all()
     return render_template('index.html', categories=categories, articles=latest_articles)
 
+
 @app.route('/donate')
 def donate():
     return render_template('donate.html')
+
 
 @app.route('/register', methods=['GET', 'POST'])
 def register():
@@ -97,7 +98,13 @@ def register():
             return redirect(url_for('register'))
 
         hashed_pw = generate_password_hash(password)
-        new_user = User(fullname=fullname, email=email, location=location, password=hashed_pw)
+
+        new_user = User(
+            fullname=fullname,
+            email=email,
+            location=location,
+            password=hashed_pw
+        )
 
         db.session.add(new_user)
         db.session.commit()
@@ -105,6 +112,7 @@ def register():
         return redirect(url_for('login'))
 
     return render_template('register.html')
+
 
 @app.route('/login', methods=['GET', 'POST'])
 def login():
@@ -123,14 +131,12 @@ def login():
 
     return render_template('login.html')
 
+
 @app.route('/logout')
 def logout():
     session.clear()
     return redirect(url_for('home'))
 
-@app.route('/')
-def home():
-    return render_template('index.html')
 
 @app.route('/admin/dashboard')
 def admin_dashboard():
@@ -139,6 +145,7 @@ def admin_dashboard():
 
     articles = Article.query.order_by(Article.date_posted.desc()).all()
     return render_template('admin_dashboard.html', articles=articles)
+
 
 @app.route('/admin/post', methods=['GET', 'POST'])
 def create_article():
@@ -172,6 +179,7 @@ def create_article():
     categories = Category.query.all()
     return render_template('create_article.html', categories=categories)
 
+
 @app.route('/admin/delete/<int:article_id>')
 def delete_article(article_id):
     if 'user_id' not in session:
@@ -183,6 +191,7 @@ def delete_article(article_id):
     db.session.commit()
 
     return redirect(url_for('admin_dashboard'))
+
 
 @app.route('/article/<int:article_id>', methods=['GET', 'POST'])
 def article(article_id):
@@ -213,7 +222,8 @@ def article(article_id):
 
     return render_template('article.html', article=article, trending=trending)
 
-# ------------------ SAFE DB INIT ------------------
+
+# ------------------ DB INIT ------------------
 with app.app_context():
     try:
         db.create_all()
@@ -223,6 +233,7 @@ with app.app_context():
             print("✅ Database initialized")
     except Exception as e:
         print("❌ DB ERROR:", e)
+
 
 # ------------------ RUN ------------------
 if __name__ == '__main__':
