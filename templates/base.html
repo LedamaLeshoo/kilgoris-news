@@ -1,0 +1,58 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Kilgoris News</title>
+    <link rel="stylesheet" href="{{ url_for('static', filename='css/style.css') }}">
+</head>
+<body>
+    <div class="ticker-wrapper">
+        <div class="ticker-label">BREAKING</div>
+        <div class="ticker-content">
+            <span>Welcome to Kilgoris News — Latest updates from Narok County...</span>
+        </div>
+    </div>
+
+    <header>
+        <nav class="container">
+            <div class="logo" onclick="window.location.href='/'" style="cursor:pointer;">
+                <span class="monogram">KN</span> Kilgoris News
+            </div>
+            
+            <ul class="nav-menu">
+                <li><a href="/">Home</a></li>
+                <li><a href="/donate">Support Us</a></li>
+            </ul>
+
+            <div class="nav-auth">
+                {% if session.get('user_id') %}
+                    <span class="user-greeting">Hi, {{ session['user_name'].split()[0] }}</span>
+                    <a href="{{ url_for('admin_dashboard') }}" class="btn-login">Dashboard</a>
+                    <a href="{{ url_for('logout') }}" class="btn-login" style="color: #c0392b;">Logout</a>
+                {% else %}
+                    <a href="{{ url_for('login') }}" class="btn-login">Login</a>
+                    <a href="{{ url_for('register') }}" class="btn-signup">Sign Up</a>
+                {% endif %}
+            </div>
+        </nav>
+    </header>
+
+    <main class="container">
+        {% with messages = get_flashed_messages(with_categories=true) %}
+          {% if messages %}
+            {% for category, message in messages %}
+              <div style="padding:10px; margin-bottom:20px; border-radius:5px; background-color: #f8d7da; color: #721c24;">{{ message }}</div>
+            {% endfor %}
+          {% endif %}
+        {% endwith %}
+        {% block content %}{% endblock %}
+    </main>
+
+    <footer>
+        <div class="container">
+            <p>&copy; 2026 Kilgoris News. Built by Ledama Samwel.</p>
+        </div>
+    </footer>
+</body>
+</html>

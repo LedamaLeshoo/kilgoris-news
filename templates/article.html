@@ -1,1 +1,40 @@
+{% extends "base.html" %}
+{% block content %}
+<article class="full-story">
+    <div class="category-tag">{{ article.category.name }}</div>
+    <h1>{{ article.title }}</h1>
+    <p class="meta">Published: {{ article.date_posted.strftime('%B %d, %Y') }}</p>
+    
+    <hr style="border: 0; border-top: 1px solid #eee; margin: 20px 0;">
+    
+    <div class="article-body">
+        <img src="{{ url_for('static', filename='uploads/' + article.image_file) }}" 
+             style="width:100%; border-radius:8px; margin-bottom:20px;">
+        {{ article.content }}
+    </div>
 
+    <section class="comments-section" style="margin-top: 50px; border-top: 2px solid #eee; padding-top: 30px;">
+        <h3>Comments ({{ article.comments|length }})</h3>
+
+        {% if session.get('user_id') %}
+            <form action="{{ url_for('article', article_id=article.id) }}" method="POST">
+                <textarea name="comment_body" rows="3" required placeholder="Leave a comment..." 
+                          style="width: 100%; padding: 15px; border: 1px solid #ddd; border-radius: 8px;"></textarea>
+                <button type="submit" class="btn-signup" style="margin-top:10px; border:none; cursor:pointer;">Post Comment</button>
+            </form>
+        {% else %}
+            <p>Please <a href="{{ url_for('login') }}">Login</a> to comment.</p>
+        {% endif %}
+
+        <div class="comments-list" style="margin-top:30px;">
+            {% for comment in article.comments|sort(attribute='date_posted', reverse=True) %}
+            <div style="background: #f9f9f9; padding: 15px; border-radius: 8px; margin-bottom: 15px;">
+                <strong style="color: #1a6b3c;">{{ comment.author.fullname }}</strong>
+                <small style="color: #888; margin-left: 10px;">{{ comment.date_posted.strftime('%d %b') }}</small>
+                <p style="margin-top: 5px;">{{ comment.body }}</p>
+            </div>
+            {% endfor %}
+        </div>
+    </section>
+</article>
+{% endblock %}
