@@ -9,22 +9,24 @@
 </head>
 <body>
     <header>
-        <nav class="container">
-            <a href="/" class="logo">KN.</a>
-            <div class="nav-links">
-                <a href="/">Home</a>
-                <a href="/donate">Support</a>
-                {% if session.get('user_id') %}
-                    {% if session.get('is_admin') %}
-                        <a href="/admin/post" style="color: var(--primary);">+ Post News</a>
-                    {% endif %}
-                    <a href="/logout">Logout</a>
-                {% else %}
-                    <a href="/login">Login</a>
-                    <a href="/register" class="btn">Join Now</a>
-                {% endif %}
-            </div>
-        </nav>
+        <nav class="navbar">
+    <a href="/" class="logo">
+        <span style="border: 2px solid var(--primary); padding: 2px 5px; margin-right: 5px;">KN.</span> 
+        KILGORIS NEWS
+    </a>
+    <div class="nav-links">
+        <a href="/" style="margin-right: 20px; text-decoration: none; color: var(--text);">Home</a>
+        {% if session.get('is_admin') %}
+            <a href="/admin" class="btn">Dashboard</a>
+        {% endif %}
+        {% if not session.get('user_id') %}
+            <a href="/login" style="margin-right: 20px; text-decoration: none;">Login</a>
+            <a href="/register" class="btn">Join Now</a>
+        {% else %}
+            <a href="/logout" style="text-decoration: none;">Logout</a>
+        {% endif %}
+    </div>
+</nav>
     </header>
 
     <main class="container">
