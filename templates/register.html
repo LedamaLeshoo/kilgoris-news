@@ -1,52 +1,26 @@
-{% extends "base.html" %}
-
+{% extends 'base.html' %}
 {% block content %}
-<div class="auth-container">
-    <div class="auth-card">
-        <h2>Join Kilgoris News</h2>
-        <p>Your Voice. Your Community. Your News.</p>
-        
-        <form action="/register" method="POST">
-            <div class="form-group">
-                <label>Full Name</label>
-                <input type="text" name="fullname" placeholder="e.g. Samwel Leshoo" required>
-            </div>
-            
-            <div class="form-group">
-                <label>Email Address</label>
-                <input type="email" name="email" required>
-            </div>
-
-            <div class="form-group">
-                <label>Region/Location</label>
-                <select name="location">
-                     <option value="Shankoe">Shankoe</option>
-                    <option value="kilgoris">Kilgoris Central</option>
-                    <option value="lolgorian">Lolgorian</option>
-                    <option value="enosaen">Enosaen</option>
-                    <option value="keyian">Keyian</option>
-                </select>
-            </div>
-
-            <div class="form-group">
-                <label>Password</label>
-                <input type="password" name="password" required>
-            </div>
-
-            <button type="submit" class="btn-signup" style="width: 100%; border: none; margin: 20px 0;">Create Account</button>
-        </form>
-        
-        <p class="auth-footer">Already have an account? <a href="{{ url_for('login') }}">Login here</a></p>
-    </div>
+<div style="max-width: 500px; margin: 60px auto; background: white; padding: 40px; border-radius: 12px;">
+    <h2>Register</h2>
+    <form method="POST">
+        <input type="text" name="fullname" placeholder="Full Name" required class="form-input">
+        <input type="email" name="email" placeholder="Email" required class="form-input">
+        <input type="password" name="password" id="pw" placeholder="Password" required class="form-input">
+        <input type="password" id="pw2" placeholder="Confirm Password" required class="form-input">
+        <button type="submit" class="btn" style="width: 100%;">Create Account</button>
+    </form>
 </div>
 
+<script>
+    document.querySelector('form').onsubmit = function(e) {
+        if(document.getElementById('pw').value !== document.getElementById('pw2').value) {
+            alert("Passwords do not match!");
+            e.preventDefault();
+        }
+    };
+</script>
+
 <style>
-    .auth-container { display: flex; justify-content: center; padding: 50px 0; }
-    .auth-card { background: white; padding: 40px; border-radius: 8px; box-shadow: 0 4px 15px rgba(0,0,0,0.1); width: 100%; max-width: 450px; }
-    .auth-card h2 { color: #1a6b3c; margin-bottom: 10px; }
-    .form-group { margin-bottom: 15px; display: flex; flex-direction: column; }
-    .form-group label { font-weight: bold; margin-bottom: 5px; color: #333; }
-    .form-group input, .form-group select { padding: 12px; border: 1px solid #ddd; border-radius: 4px; font-size: 1rem; }
-    .auth-footer { text-align: center; margin-top: 20px; font-size: 0.9rem; }
+    .form-input { width: 100%; padding: 12px; margin: 10px 0; border: 1px solid #ddd; border-radius: 6px; }
 </style>
 {% endblock %}
