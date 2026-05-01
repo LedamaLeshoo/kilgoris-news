@@ -10,74 +10,49 @@
     <div class="ticker-wrapper">
         <div class="ticker-label">BREAKING</div>
         <div class="ticker-content">
-            <span>Welcome to Kilgoris News — Stay tuned for the latest updates from Narok County...</span>
+            <span>Welcome to Kilgoris News — Latest updates from Narok County...</span>
         </div>
     </div>
 
     <header>
         <nav class="container">
-    <div class="logo"><span class="monogram">KN</span> Kilgoris News</div>
-    
-    <ul class="nav-menu">
-        <li><a href="/">Home</a></li>
-        <li><a href="#">Local</a></li>
-        <li><a href="#">Politics</a></li>
-        <li><a href="#">Business</a></li>
-        <li><a href="#">Education</a></li>
-    </ul>
+            <div class="logo" onclick="window.location.href='/'" style="cursor:pointer;">
+                <span class="monogram">KN</span> Kilgoris News
+            </div>
+            
+            <ul class="nav-menu">
+                <li><a href="/">Home</a></li>
+                <li><a href="/donate">Support Us</a></li>
+            </ul>
 
-    <form action="/search" method="GET" class="search-form">
-        <input type="text" name="q" placeholder="Search..." class="search-input">
-        <button type="submit" class="search-btn">🔍</button>
-    </form>
-
-    <div class="nav-auth">
-        {% if session.get('user_id') %}
-            <span class="user-greeting">Hello, {{ session['user_name'].split()[0] }}</span>
-            <a href="/admin/dashboard" class="btn-login">Dashboard</a>
-            <a href="/logout" class="btn-login" style="color: #c0392b;">Logout</a>
-        {% else %}
-            <a href="{{ url_for('login') }}" class="btn-login">Login</a>
-            <a href="{{ url_for('register') }}" class="btn-signup">Sign Up</a>
-        {% endif %}
-    </div>
-
-
-</nav>
+            <div class="nav-auth">
+                {% if session.get('user_id') %}
+                    <span class="user-greeting">Hi, {{ session['user_name'].split()[0] }}</span>
+                    <a href="{{ url_for('admin_dashboard') }}" class="btn-login">Dashboard</a>
+                    <a href="{{ url_for('logout') }}" class="btn-login" style="color: #c0392b;">Logout</a>
+                {% else %}
+                    <a href="{{ url_for('login') }}" class="btn-login">Login</a>
+                    <a href="{{ url_for('register') }}" class="btn-signup">Sign Up</a>
+                {% endif %}
+            </div>
+        </nav>
     </header>
 
     <main class="container">
+        {% with messages = get_flashed_messages(with_categories=true) %}
+          {% if messages %}
+            {% for category, message in messages %}
+              <div style="padding:10px; margin-bottom:20px; border-radius:5px; background-color: #f8d7da; color: #721c24;">{{ message }}</div>
+            {% endfor %}
+          {% endif %}
+        {% endwith %}
         {% block content %}{% endblock %}
     </main>
 
     <footer>
-    <div class="container">
-        <div class="footer-grid">
-            <div class="footer-section">
-                <h4>Kilgoris News</h4>
-                <p>The voice of Narok County. Providing verified news and updates to the community since 2026.</p>
-            </div>
-
-            <div class="footer-section">
-                <h4>Follow Our Handles</h4>
-                <div class="social-links">
-                    <a href="https://facebook.com/kilgorisnews" target="_blank" title="Facebook">Facebook</a>
-                    <a href="https://twitter.com/kilgorisnews" target="_blank" title="X (Twitter)">X</a>
-                    <a href="https://instagram.com/kilgorisnews" target="_blank" title="Instagram">Instagram</a>
-                    <a href="https://wa.me/254700000000" target="_blank" title="WhatsApp">WhatsApp</a>
-                </div>
-            </div>
-
-            <div class="footer-section">
-                <h4>Support Journalism</h4>
-                <p>Help us stay independent and verified.</p>
-                <a href="/donate" class="footer-donate-btn">❤️ Donate / Support</a>
-            </div>
+        <div class="container">
+            <p>&copy; 2026 Kilgoris News. Built by Ledama Samwel.</p>
         </div>
-
-        <hr style="border: 0; border-top: 1px solid #444; margin-bottom: 20px;">
-        <p>&copy; 2026 Kilgoris News. All Rights Reserved. Built by Ledama Samwel.</p>
-    </div>
-</footer>
+    </footer>
 </body>
 </html>
