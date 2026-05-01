@@ -175,6 +175,7 @@ def article(article_id):
     return render_template('article.html', article=art)
 
 with app.app_context():
+    db.drop_all()
     db.create_all()
 
 if __name__ == '__main__':
