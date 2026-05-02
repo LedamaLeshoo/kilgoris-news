@@ -178,9 +178,9 @@ def search():
 
 @app.route('/category/<string:cat_name>')
 def category(cat_name):
-    # This finds only articles matching the clicked category
-    category_posts = Article.query.filter_by(category=cat_name).order_by(Article.date_posted.desc()).all()
-    return render_template('index.html', posts=category_posts, category_title=cat_name.upper())
+    # Change 'posts' to 'articles' to match your index.html template
+    category_articles = Article.query.filter_by(category=cat_name).order_by(Article.date_posted.desc()).all()
+    return render_template('index.html', articles=category_articles, category_title=cat_name.upper())
 
 @app.route('/admin')
 def admin_dashboard():
@@ -213,7 +213,6 @@ def article(article_id):
     return render_template('article.html', article=art)
 
 with app.app_context():
-    db.drop_all() 
     db.create_all()
 
 if __name__ == '__main__':
