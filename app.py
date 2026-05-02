@@ -52,6 +52,7 @@ class Article(db.Model):
     date_posted = db.Column(db.DateTime, default=datetime.utcnow)
     file_path = db.Column(db.String(100), default='default.jpg')
     is_video = db.Column(db.Boolean, default=False)
+    category = db.Column(db.String(50))
     comments = db.relationship('Comment', backref='article', lazy=True, cascade="all, delete-orphan")
 
 class Comment(db.Model):
@@ -158,6 +159,16 @@ def logout():
     session.clear()
     return redirect(url_for('home'))
 
+@app.route('/support')
+def support():
+    return render_template('support.html')
+
+@app.route('/category/<string:cat_name>')
+def category(cat_name):
+    # This finds only articles matching the clicked category
+    category_posts = Article.query.filter_by(category=cat_name).order_by(Article.date_posted.desc()).all()
+    return render_template('index.html', posts=category_posts, category_title=cat_name.upper())
+
 @app.route('/article/<int:article_id>', methods=['GET', 'POST'])
 def article(article_id):
     art = Article.query.get_or_404(article_id)
@@ -175,6 +186,7 @@ def article(article_id):
     return render_template('article.html', article=art)
 
 with app.app_context():
+    db.drop_all() 
     db.create_all()
 
 if __name__ == '__main__':
