@@ -7,6 +7,52 @@
     <link rel="stylesheet" href="{{ url_for('static', filename='css/style.css') }}">
     <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.0.0/css/all.min.css">
 </head>
+<header class="site-header">
+    <!-- Top Row: Search, Branding, and Auth -->
+    <div class="header-top container">
+        <div class="header-left">
+            <button class="search-btn"><i class="fas fa-search"></i></button>
+        </div>
+        
+        <div class="header-center">
+            <a href="/" class="brand-link">
+                <div class="brand-wrapper">
+                    <span class="brand-box">KN.</span>
+                    <h1 class="brand-name">KILGORIS NEWS</h1>
+                </div>
+                <p class="brand-motto">SINCE 2026</p>
+            </a>
+        </div>
+
+        <div class="header-right">
+            {% if not session.get('user_id') %}
+                <a href="/login" class="login-text">LOGIN</a>
+                <a href="/register" class="subscribe-btn">SUBSCRIBE NOW</a>
+            {% else %}
+                <a href="/logout" class="login-text">LOGOUT</a>
+                {% if session.get('is_admin') %}
+                    <a href="/admin" class="subscribe-btn">POST NEWS</a>
+                {% endif %}
+            {% endif %}
+        </div>
+    </div>
+
+    <!-- Bottom Row: Navigation Categories -->
+    <nav class="category-nav">
+        <div class="container">
+            <ul class="nav-menu">
+                <li><a href="/">HOME</a></li>
+                <li><a href="/category/politics">POLITICS</a></li>
+                <li><a href="/category/business">BUSINESS</a></li>
+                <li><a href="/category/counties">COUNTIES</a></li>
+                <li><a href="/category/world">WORLD</a></li>
+                <li><a href="/category/health">HEALTH</a></li>
+                <li><a href="/category/sports">SPORTS</a></li>
+                <li><a href="/category/entertainment">ENTERTAINMENT</a></li>
+            </ul>
+        </div>
+    </nav>
+</header>
 <body>
     <nav class="navbar">
         <!-- Your Navbar Code -->
