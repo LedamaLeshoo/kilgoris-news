@@ -173,13 +173,18 @@ def search():
         ).all()
     else:
         results = []
-    return render_template('index.html', posts=results, category_title=f"SEARCH RESULTS FOR: {query}")
+    # Changed 'posts' to 'articles' to match your index.html
+    return render_template('index.html', articles=results, category_title=f"SEARCH RESULTS FOR: {query}")
 
 @app.route('/category/<string:cat_name>')
 def category(cat_name):
     # This finds only articles matching the clicked category
     category_posts = Article.query.filter_by(category=cat_name).order_by(Article.date_posted.desc()).all()
     return render_template('index.html', posts=category_posts, category_title=cat_name.upper())
+
+@app.route('/donate')
+def donate():
+    return render_template('donate.html')
 
 @app.route('/article/<int:article_id>', methods=['GET', 'POST'])
 def article(article_id):
