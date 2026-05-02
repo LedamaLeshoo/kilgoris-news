@@ -1,0 +1,31 @@
+{% extends "base.html" %}
+{% block content %}
+<div class="container">
+    <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 20px;">
+        <h2>News Management</h2>
+        <a href="/admin/post" class="btn-signup">Add New Story</a>
+    </div>
+    <table style="width: 100%; border-collapse: collapse; background: white; box-shadow: 0 2px 10px rgba(0,0,0,0.1);">
+        <thead style="background: var(--primary-green); color: white;">
+            <tr>
+                <th style="padding: 15px; text-align: left;">Title</th>
+                <th style="padding: 15px; text-align: left;">Category</th>
+                <th style="padding: 15px; text-align: left;">Date</th>
+                <th style="padding: 15px; text-align: left;">Actions</th>
+            </tr>
+        </thead>
+        <tbody>
+            {% for article in articles %}
+            <tr style="border-bottom: 1px solid #eee;">
+                <td style="padding: 15px;">{{ article.title }}</td>
+                <td style="padding: 15px;">{{ article.category.name }}</td>
+                <td style="padding: 15px;">{{ article.date_posted.strftime('%Y-%m-%d') }}</td>
+                <td style="padding: 15px;">
+                    <a href="/admin/delete/{{ article.id }}" style="color: #c0392b; font-weight: bold;" onclick="return confirm('Delete this article?')">Delete</a>
+                </td>
+            </tr>
+            {% endfor %}
+        </tbody>
+    </table>
+</div>
+{% endblock %}
