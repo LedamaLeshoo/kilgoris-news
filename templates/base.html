@@ -7,6 +7,12 @@
     <link rel="stylesheet" href="{{ url_for('static', filename='css/style.css') }}">
     <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.0.0/css/all.min.css">
 </head>
+
+<form action="/search" method="GET" class="search-form">
+    <input type="text" name="q" placeholder="Search news..." class="search-input">
+    <button type="submit" class="search-btn"><i class="fas fa-search"></i></button>
+</form>
+
 <header class="site-header">
     <!-- Top Row: Search, Branding, and Auth -->
     <div class="header-top container">
@@ -25,16 +31,19 @@
         </div>
 
         <div class="header-right">
-            {% if not session.get('user_id') %}
-                <a href="/login" class="login-text">LOGIN</a>
-                <a href="/register" class="subscribe-btn">SUBSCRIBE NOW</a>
-            {% else %}
-                <a href="/logout" class="login-text">LOGOUT</a>
-                {% if session.get('is_admin') %}
-                    <a href="/admin" class="subscribe-btn">POST NEWS</a>
-                {% endif %}
-            {% endif %}
-        </div>
+    <!-- Bright Donate Button -->
+    <a href="/donate" class="donate-btn">DONATE</a>
+
+    {% if not session.get('user_id') %}
+        <a href="/login" class="login-text">LOGIN</a>
+        <a href="/register" class="subscribe-btn">SUBSCRIBE NOW</a>
+    {% else %}
+        <a href="/logout" class="login-text">LOGOUT</a>
+        {% if session.get('is_admin') %}
+            <a href="/admin" class="subscribe-btn">POST NEWS</a>
+        {% endif %}
+    {% endif %}
+</div>
     </div>
 
     <!-- Bottom Row: Navigation Categories -->
@@ -77,5 +86,24 @@
             </p>
         </div>
     </footer>
+    <script>
+    document.addEventListener("DOMContentLoaded", function() {
+        const observer = new IntersectionObserver((entries) => {
+            entries.forEach(entry => {
+                if (entry.isIntersecting) {
+                    entry.target.style.opacity = 1;
+                    entry.target.style.transform = "translateY(0)";
+                }
+            });
+        });
+
+        document.querySelectorAll('.card').forEach(card => {
+            card.style.opacity = 0;
+            card.style.transform = "translateY(30px)";
+            card.style.transition = "all 0.6s ease-out";
+            observer.observe(card);
+        });
+    });
+</script>
 </body>
 </html>
