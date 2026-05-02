@@ -29,6 +29,29 @@ footer {
     text-align: center;
     box-shadow: 0 -5px 15px rgba(0,0,0,0.1);
 }
+.donate-btn {
+    background: #ff5722; /* Vibrant Orange-Red */
+    color: #fff;
+    padding: 8px 18px;
+    font-weight: 800;
+    text-decoration: none;
+    font-size: 0.75rem;
+    border-radius: 2px;
+    margin-right: 15px;
+    transition: background 0.3s ease;
+}
+
+.donate-btn:hover {
+    background: #e64a19; /* Darker shade on hover */
+    box-shadow: 0 4px 8px rgba(0,0,0,0.2);
+}
+
+/* Ensure the header-right remains aligned */
+.header-right {
+    display: flex;
+    align-items: center;
+    justify-content: flex-end;
+}
 
 .footer-content h3 {
     color: #ffc107;
