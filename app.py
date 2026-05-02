@@ -163,6 +163,18 @@ def logout():
 def support():
     return render_template('support.html')
 
+@app.route('/search')
+def search():
+    query = request.args.get('q')
+    if query:
+        # Search for the query inside titles or content
+        results = Article.query.filter(
+            (Article.title.contains(query)) | (Article.content.contains(query))
+        ).all()
+    else:
+        results = []
+    return render_template('index.html', posts=results, category_title=f"SEARCH RESULTS FOR: {query}")
+
 @app.route('/category/<string:cat_name>')
 def category(cat_name):
     # This finds only articles matching the clicked category
