@@ -15,39 +15,38 @@
 </form>
 
 <header class="site-header">
-    <!-- Top Row: Search, Branding, and Auth -->
     <div class="header-top container">
+        <!-- Logo on the Upper Left -->
         <div class="header-left">
-            <button class="search-btn"><i class="fas fa-search"></i></button>
-        </div>
-        
-        <div class="header-center">
             <a href="/" class="brand-link">
-                <img src="{{ url_for('static', filename='img/logo.png') }}" alt="Kilgoris News Logo" style="height: 80px;">
-                    <span class="brand-box">KN.</span>
-                    <h1 class="brand-name">KILGORIS NEWS</h1>
-                </div>
-                <p class="brand-motto">SINCE 2026</p>
+                <img src="{{ url_for('static', filename='img/logo.png') }}" alt="Kilgoris News" class="main-logo">
             </a>
         </div>
+        
+        <!-- Large, Centered Search Box -->
+        <div class="header-center">
+            <form action="/search" method="GET" class="search-form">
+                <input type="text" name="q" placeholder="Search news, topics, and more..." class="search-input">
+                <button type="submit" class="search-submit"><i class="fas fa-search"></i></button>
+            </form>
+        </div>
 
+        <!-- Auth & Action Buttons -->
         <div class="header-right">
-    <!-- Bright Donate Button -->
-    <a href="/donate" class="donate-btn">DONATE</a>
-
-    {% if not session.get('user_id') %}
-        <a href="/login" class="login-text">LOGIN</a>
-        <a href="/register" class="subscribe-btn">SUBSCRIBE NOW</a>
-    {% else %}
-        <a href="/logout" class="login-text">LOGOUT</a>
-        {% if session.get('is_admin') %}
-            <a href="/admin" class="subscribe-btn">POST NEWS</a>
-        {% endif %}
-    {% endif %}
-</div>
+            <a href="/donate" class="donate-btn">DONATE</a>
+            {% if not session.get('user_id') %}
+                <a href="/login" class="login-link">LOGIN</a>
+                <a href="/register" class="subscribe-btn">SUBSCRIBE</a>
+            {% else %}
+                <a href="/logout" class="login-link">LOGOUT</a>
+                {% if session.get('is_admin') %}
+                    <a href="/admin" class="subscribe-btn">POST NEWS</a>
+                {% endif %}
+            {% endif %}
+        </div>
     </div>
 
-    <!-- Bottom Row: Navigation Categories -->
+    <!-- Red Category Nav (Tuko Style) -->
     <nav class="category-nav">
         <div class="container">
             <ul class="nav-menu">
@@ -64,8 +63,8 @@
         </div>
     </nav>
 </header>
-<body>
-    <nav class="navbar">
+
+ <nav class="navbar">
         <!-- Your Navbar Code -->
     </nav>
 
@@ -75,19 +74,13 @@
         {% endblock %}
     </main>
 
-    <footer>
-        <div class="footer-content">
-            <h3>KN. KILGORIS NEWS</h3>
-            <div class="social-links">
-                <a href="#"><i class="fab fa-facebook"></i></a>
-                <a href="#"><i class="fab fa-twitter"></i></a>
-                <a href="#"><i class="fab fa-whatsapp"></i></a>
-            </div>
-            <p style="margin-top: 20px; opacity: 0.8;">
-                &copy; 2026 Voice of Kilgoris. All Rights Reserved.
-            </p>
-        </div>
-    </footer>
+<!-- Minimal Footer (Removing the huge green block) -->
+<footer class="minimal-footer">
+    <div class="container">
+        <p>&copy; 2026 KILGORIS NEWS. Informing. Connecting. Empowering.</p>
+    </div>
+</footer>
+  
     <script>
     document.addEventListener("DOMContentLoaded", function() {
         const observer = new IntersectionObserver((entries) => {
