@@ -1,4 +1,37 @@
 /* Core Layout to push footer down */
+:root {
+    --logo-navy: #011632;   /* Matches the KN blue */
+    --logo-red: #bd081c;    /* Matches the KN red */
+    --light-gray: #f4f4f4;
+    --white: #ffffff;
+    --text-dark: #333333;
+}
+
+/* Apply the Navy to the Header */
+.site-header {
+    background-color: var(--white);
+    border-bottom: 3px solid var(--logo-navy);
+}
+
+/* Make the category nav Navy */
+.category-nav {
+    background-color: var(--logo-navy);
+}
+
+/* Style your buttons with the Logo Red */
+.subscribe-btn, .donate-btn {
+    background-color: var(--logo-red);
+    color: var(--white);
+    border-radius: 4px;
+    font-weight: bold;
+    transition: transform 0.2s;
+}
+
+.subscribe-btn:hover {
+    background-color: var(--logo-navy);
+    transform: scale(1.05);
+}
+
 html, body {
     height: 100%;
     margin: 0;
@@ -187,4 +220,27 @@ footer {
     border: none;
     font-size: 1.6rem;
     cursor: pointer;
+}
+
+/* Add a shadow to your news cards to make them pop */
+.card {
+    background: var(--white);
+    border-radius: 8px;
+    box-shadow: 0 4px 12px rgba(0,0,0,0.1);
+    overflow: hidden;
+    margin-bottom: 20px;
+}
+
+/* Professional typography for news titles */
+.brand-name {
+    color: var(--logo-navy);
+    letter-spacing: 1px;
+    text-transform: uppercase;
+}
+
+/* Footer should be Navy to match the logo icon */
+footer {
+    background-color: var(--logo-navy);
+    color: var(--white);
+    padding: 40px 0;
 }
