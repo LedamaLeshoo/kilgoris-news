@@ -178,7 +178,7 @@ def search():
 
 @app.route('/category/<string:cat_name>')
 def category(cat_name):
-    # Change 'posts' to 'articles' to match your index.html template
+    # Change 'posts' to 'articles' so the home page template can see them
     category_articles = Article.query.filter_by(category=cat_name).order_by(Article.date_posted.desc()).all()
     return render_template('index.html', articles=category_articles, category_title=cat_name.upper())
 
@@ -190,7 +190,7 @@ def admin_dashboard():
         
     # Fetch all articles so you can see them on the dashboard
     articles = Article.query.all()
-    return render_template('admin.html', articles=articles)
+    return render_template('admin_dashboard.html', articles=articles)
 
 @app.route('/donate')
 def donate():
