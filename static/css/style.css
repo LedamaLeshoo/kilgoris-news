@@ -55,3 +55,109 @@ footer {
     border-radius: 4px;
     margin-right: 8px;
 }
+/* Typography & Layout */
+.site-header {
+    background: #fff;
+    border-bottom: 4px solid #111;
+    position: sticky;
+    top: 0;
+    z-index: 1000;
+}
+
+.header-top {
+    display: grid;
+    grid-template-columns: 1fr 2fr 1fr;
+    align-items: center;
+    padding: 15px 0;
+}
+
+/* Centered Branding */
+.brand-link {
+    text-align: center;
+    text-decoration: none;
+    color: #111;
+    display: block;
+}
+
+.brand-wrapper {
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    gap: 10px;
+}
+
+.brand-box {
+    border: 3px solid #111;
+    padding: 2px 8px;
+    font-weight: 900;
+    font-size: 1.8rem;
+}
+
+.brand-name {
+    font-size: 2.5rem;
+    font-weight: 900;
+    letter-spacing: -2px;
+}
+
+.brand-motto {
+    font-size: 0.7rem;
+    font-weight: 800;
+    letter-spacing: 4px;
+    margin-top: -5px;
+}
+
+/* Navigation Categories */
+.category-nav {
+    border-top: 1px solid #eee;
+}
+
+.nav-menu {
+    display: flex;
+    justify-content: center;
+    list-style: none;
+    gap: 20px;
+}
+
+.nav-menu li a {
+    text-decoration: none;
+    color: #111;
+    font-weight: 700;
+    font-size: 0.85rem;
+    padding: 15px 5px;
+    position: relative;
+    display: inline-block;
+}
+
+/* The Underline Animation */
+.nav-menu li a::after {
+    content: '';
+    position: absolute;
+    width: 0;
+    height: 3px;
+    bottom: 0;
+    left: 0;
+    background-color: #ffc107; /* Golden accent */
+    transition: width 0.3s ease;
+}
+
+.nav-menu li a:hover::after {
+    width: 100%;
+}
+
+/* Auth Buttons */
+.subscribe-btn {
+    background: #000;
+    color: #fff;
+    padding: 8px 18px;
+    font-weight: 800;
+    text-decoration: none;
+    font-size: 0.75rem;
+    margin-left: 15px;
+}
+
+.search-btn {
+    background: none;
+    border: none;
+    font-size: 1.2rem;
+    cursor: pointer;
+}
