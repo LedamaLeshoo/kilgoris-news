@@ -8,6 +8,7 @@ body {
     display: flex;
     flex-direction: column;
     background-color: #397bbd;
+    background-image: url(https://unsplash.com/photos/group-of-people-wearing-orange-and-yellow-traditional-dress-nayS2zjJpGw);
     font-family: 'Inter', sans-serif;
 }
 
