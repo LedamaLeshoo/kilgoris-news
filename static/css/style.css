@@ -1,14 +1,14 @@
 /* 1. ROOT VARIABLES - The Logo Colors */
 :root {
-    --navy: #011632;      /* From your KN logo */
-    --red: #bd081c;       /* From your KN logo */
+    --navy: #011632;      /* Matches your KN logo blue */
+    --red: #bd081c;       /* Matches your KN logo red */
     --white: #ffffff;
     --light-bg: #f4f7f6;
-    --text-dark: #222222;
+    --text-dark: #1a1a1a; /* Darker for better readability */
     --gray-border: #e1e1e1;
 }
 
-/* 2. GLOBAL RESET */
+/* 2. GLOBAL RESET & BASE TYPOGRAPHY */
 * {
     margin: 0;
     padding: 0;
@@ -16,10 +16,12 @@
 }
 
 body {
-    font-family: 'Helvetica Neue', Helvetica, Arial, sans-serif;
+    /* Using Roboto or system fonts for that clean news look */
+    font-family: 'Roboto', Arial, sans-serif;
     background-color: var(--light-bg);
     color: var(--text-dark);
     line-height: 1.6;
+    font-size: 16px; /* Standard base font size */
 }
 
 .container {
@@ -37,22 +39,18 @@ body {
 .header-top {
     display: flex;
     align-items: center;
-    justify-content: space-between; /* Keeps Logo left, Search center, Buttons right */
-    padding: 15px 0;
+    justify-content: space-between;
+    padding: 20px 0; /* More breathing room */
 }
 
-/* Logo (Upper Left & Large) */
-.header-left {
-    flex: 1;
-}
-
+/* Logo Size */
 .main-logo {
-    height: 100px; /* Increased size as requested */
+    height: 110px; 
     width: auto;
     display: block;
 }
 
-/* Search Box (Centered & Large) */
+/* 4. LARGE CENTERED SEARCH (Tuko Style) */
 .header-center {
     flex: 2;
     display: flex;
@@ -62,7 +60,7 @@ body {
 .search-form {
     display: flex;
     width: 100%;
-    max-width: 500px;
+    max-width: 600px; /* Wider search bar */
     border: 2px solid var(--navy);
     border-radius: 4px;
     overflow: hidden;
@@ -70,53 +68,42 @@ body {
 
 .search-input {
     flex-grow: 1;
-    padding: 12px 15px;
+    padding: 14px 18px; /* Bigger input */
     border: none;
     outline: none;
-    font-size: 16px;
+    font-size: 18px; /* Highly readable font size */
 }
 
 .search-submit {
     background: var(--navy);
     color: white;
     border: none;
-    padding: 0 20px;
+    padding: 0 25px;
+    font-size: 20px;
     cursor: pointer;
-    transition: background 0.3s;
 }
 
-.search-submit:hover {
-    background: var(--red);
-}
-
-/* Auth Buttons (Upper Right) */
-.header-right {
-    flex: 1;
-    display: flex;
-    justify-content: flex-end;
-    align-items: center;
-    gap: 15px;
-}
-
-/* 4. NAVIGATION BAR (Tuko Red Style) */
+/* 5. NAVIGATION BAR (Bold & Large) */
 .category-nav {
     background-color: var(--red);
-    box-shadow: 0 2px 5px rgba(0,0,0,0.1);
+    box-shadow: 0 2px 8px rgba(0,0,0,0.15);
 }
 
 .nav-menu {
     list-style: none;
     display: flex;
     justify-content: center;
+    flex-wrap: wrap; /* Prevents text breaking on small screens */
 }
 
 .nav-menu li a {
     color: var(--white);
     text-decoration: none;
-    font-weight: bold;
-    padding: 15px 20px;
+    font-weight: 800; /* Extra bold like Tuko */
+    padding: 18px 22px; /* Large clickable areas */
     display: block;
-    font-size: 14px;
+    font-size: 18px; /* Standard Tuko-style navigation size */
+    text-transform: uppercase;
     transition: background 0.3s;
 }
 
@@ -124,68 +111,68 @@ body {
     background-color: var(--navy);
 }
 
-/* 5. BUTTON STYLING */
+/* 6. ACTION BUTTONS */
+.header-right {
+    flex: 1;
+    display: flex;
+    justify-content: flex-end;
+    align-items: center;
+    gap: 20px;
+}
+
 .subscribe-btn {
-    background-color: var(--red);
+    background-color: #000000; /* Contrast button */
     color: var(--white);
-    padding: 10px 22px;
+    padding: 12px 25px;
     border-radius: 4px;
     text-decoration: none;
     font-weight: bold;
-    font-size: 14px;
-    transition: transform 0.2s, background 0.3s;
-}
-
-.subscribe-btn:hover {
-    background-color: var(--navy);
-    transform: translateY(-2px);
+    font-size: 16px;
+    text-transform: uppercase;
 }
 
 .donate-btn {
-    color: var(--red);
-    font-weight: bold;
-    text-decoration: none;
-    border: 2px solid var(--red);
-    padding: 8px 15px;
-    border-radius: 4px;
-    transition: all 0.3s;
-}
-
-.donate-btn:hover {
-    background: var(--red);
+    background-color: #ff5722; /* Bright orange for attention */
     color: white;
+    padding: 12px 25px;
+    border-radius: 4px;
+    text-decoration: none;
+    font-weight: bold;
+    font-size: 16px;
 }
 
 .login-link {
     color: var(--navy);
     text-decoration: none;
-    font-weight: 600;
+    font-weight: 700;
+    font-size: 16px;
+    border-bottom: 2px solid transparent;
 }
 
-/* 6. MINIMAL FOOTER (Removed Green Block) */
+.login-link:hover {
+    border-bottom: 2px solid var(--navy);
+}
+
+/* 7. NEWS TITLES (On index.html) */
+h2, .article-title {
+    font-size: 24px; /* Big, bold headlines */
+    font-weight: 800;
+    color: var(--navy);
+    margin-bottom: 10px;
+}
+
+/* 8. MINIMAL FOOTER */
 .minimal-footer {
     background: var(--navy);
     color: var(--white);
     text-align: center;
-    padding: 30px 0;
+    padding: 40px 0;
     margin-top: 60px;
-    border-top: 5px solid var(--red); /* Red accent line */
+    border-top: 6px solid var(--red);
 }
 
 .minimal-footer p {
-    opacity: 0.8;
-    font-size: 14px;
-}
-
-/* 7. ARTICLE CARDS (Graphic Feel) */
-.card {
-    background: var(--white);
-    border-radius: 8px;
-    margin-bottom: 25px;
-    box-shadow: 0 4px 15px rgba(0,0,0,0.05);
-    transition: transform 0.3s;
-}
-
-.card:hover {
-    transform: translateY(-5px);
+    font-weight: bold;
+    font-size: 16px;
+    letter-spacing: 1px;
 }
