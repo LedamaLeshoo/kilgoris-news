@@ -8,6 +8,7 @@ body {
     display: flex;
     flex-direction: column;
     background-color: #397bbd;
+    min-height: 100vh;
     background-image: url(https://unsplash.com/photos/group-of-people-wearing-orange-and-yellow-traditional-dress-nayS2zjJpGw);
     font-family: 'Inter', sans-serif;
 }
@@ -23,6 +24,7 @@ footer {
     background: linear-gradient(45deg, #004d40, #00695c); /* Rich Green Gradient */
     border-top: 5px solid #ffc107; /* Bright Gold accent line */
     color: white;
+    margin-top: auto;
     padding: 40px 0;
     text-align: center;
     box-shadow: 0 -5px 15px rgba(0,0,0,0.1);
