@@ -1,27 +1,25 @@
 {% extends "base.html" %}
 
 {% block content %}
-<div class="auth-container" style="text-align: center; max-width: 600px; margin: 0 auto;">
-    <div class="auth-card">
-        <h2 style="color: var(--primary-green);">Support Kilgoris News</h2>
-        <p>Your contributions help us keep Narok County informed with verified, independent news.</p>
-        
-        <hr style="margin: 20px 0; border: 0; border-top: 1px solid #eee;">
+<div class="container" style="padding: 100px 20px; text-align: center; min-height: 70vh;">
+    <h1 style="font-size: 3.5rem; font-weight: 900; color: #111; letter-spacing: -2px;">SUPPORT KILGORIS NEWS</h1>
+    <p style="font-size: 1.3rem; color: #555; margin: 20px auto 40px; max-width: 700px; line-height: 1.6;">
+        Your support ensures that we can continue providing independent, verified journalism to our local community. Every contribution makes a difference.
+    </p>
 
-        <div class="payment-option" style="margin-bottom: 30px;">
-            <h3>Option 1: M-PESA</h3>
-             <p><strong>Phone no:</strong> 0717379639 (Mpesa)</p>
-             <p>OR</p>
-            <p><strong>Paybill:</strong> 247247 (Equity)</p>
-            <p><strong>Account:</strong> 123456789</p>
-            <p><em>OR Till Number: 556677</em></p>
+    <div style="display: flex; justify-content: center; gap: 30px; flex-wrap: wrap;">
+        <!-- M-PESA Option -->
+        <div style="background: #fff; padding: 40px; border-radius: 12px; box-shadow: 0 15px 35px rgba(0,0,0,0.1); width: 320px; border-top: 6px solid #4caf50;">
+            <h3 style="color: #4caf50; font-weight: 800; margin-bottom: 15px;">M-PESA</h3>
+            <p style="font-size: 1.1rem; margin-bottom: 10px;">Paybill: <strong>400200</strong></p>
+            <p style="font-size: 1.1rem;">Account: <strong>01100956478001</strong></p>
         </div>
 
-        <div class="payment-option">
-            <h3>Option 2: PayPal / Card</h3>
-            <a href="https://www.paypal.com/donate?hosted_button_id=YOUR_ID" target="_blank" class="btn-signup">
-                Donate via PayPal
-            </a>
+        <!-- PayPal/Card Option -->
+        <div style="background: #fff; padding: 40px; border-radius: 12px; box-shadow: 0 15px 35px rgba(0,0,0,0.1); width: 320px; border-top: 6px solid #0070ba;">
+            <h3 style="color: #0070ba; font-weight: 800; margin-bottom: 15px;">ONLINE</h3>
+            <p style="color: #666; margin-bottom: 20px;">Support us via PayPal or Credit Card.</p>
+            <a href="#" class="subscribe-btn" style="background: #0070ba; width: 100%; display: block; padding: 12px;">DONATE NOW</a>
         </div>
     </div>
 </div>

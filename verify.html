@@ -1,0 +1,11 @@
+{% extends 'base.html' %}
+{% block content %}
+<div style="max-width: 400px; margin: 100px auto; text-align: center;">
+    <h2>Check your Email</h2>
+    <p>We sent a 6-digit code to verify your account.</p>
+    <form method="POST">
+        <input type="text" name="otp" maxlength="6" style="font-size: 2rem; text-align: center; letter-spacing: 10px; margin: 20px 0;" required>
+        <button type="submit" class="btn" style="width: 100%;">Verify & Complete</button>
+    </form>
+</div>
+{% endblock %}

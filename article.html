@@ -1,38 +1,69 @@
-{% extends "base.html" %}
+{% extends 'base.html' %}
 {% block content %}
-<article class="full-story">
-    <div class="category-tag">{{ article.category.name }}</div>
-    <h1>{{ article.title }}</h1>
-    <p class="meta">Published: {{ article.date_posted.strftime('%B %d, %Y') }}</p>
-    
-    <hr style="border: 0; border-top: 1px solid #eee; margin: 20px 0;">
-    
-    <div class="article-body">
-        <img src="{{ url_for('static', filename='uploads/' + article.image_file) }}" 
-             style="width:100%; border-radius:8px; margin-bottom:20px;">
+<article style="max-width: 900px; margin: 0 auto; padding: 40px 0;">
+    <h1 style="font-size: 2.5rem; margin-bottom: 20px;">{{ article.title }}</h1>
+    <p style="color: #666; margin-bottom: 20px;">Published on {{ article.date_posted.strftime('%B %d, %Y') }}</p>
+
+    {% if article.is_video %}
+        <video controls style="width: 100%; border-radius: 12px; margin-bottom: 30px;">
+            <source src="{{ url_for('static', filename='uploads/' + article.file_path) }}" type="video/mp4">
+        </video>
+    {% else %}
+        <img src="{{ url_for('static', filename='uploads/' + article.file_path) }}" style="width: 100%; border-radius: 12px; margin-bottom: 30px;">
+    {% endif %}
+
+    <div style="font-size: 1.2rem; line-height: 1.8; color: #333;">
         {{ article.content }}
     </div>
 
-    <section class="comments-section" style="margin-top: 50px; border-top: 2px solid #eee; padding-top: 30px;">
-        <h3>Comments ({{ article.comments|length }})</h3>
+    <!-- Social Share Section -->
+    <div style="margin-top: 40px; padding: 20px; border-top: 1px solid #eee; display: flex; gap: 15px; align-items: center;">
+        <strong>Share:</strong>
+        <a href="#" style="color: #25D366; font-size: 1.5rem;"><i class="fab fa-whatsapp"></i></a>
+        <a href="#" style="color: #1877F2; font-size: 1.5rem;"><i class="fab fa-facebook"></i></a>
+        <a href="#" style="color: #1DA1F2; font-size: 1.5rem;"><i class="fab fa-twitter"></i></a>
+    </div>
 
+    <!-- Comments Section -->
+    <section style="margin-top: 60px;">
+        <h3>Community Discussion ({{ article.comments|length }})</h3>
+        
         {% if session.get('user_id') %}
-            <form action="{{ url_for('article', article_id=article.id) }}" method="POST">
-                <textarea name="comment_body" rows="3" required placeholder="Leave a comment..." 
-                          style="width: 100%; padding: 15px; border: 1px solid #ddd; border-radius: 8px;"></textarea>
-                <button type="submit" class="btn-signup" style="margin-top:10px; border:none; cursor:pointer;">Post Comment</button>
+            <form method="POST" style="margin-top: 20px;">
+                <textarea name="body" placeholder="Join the conversation..." required style="width: 100%; padding: 15px; border-radius: 8px; border: 1px solid #ddd;"></textarea>
+                <button type="submit" class="btn" style="margin-top: 10px;">Post Comment</button>
             </form>
         {% else %}
-            <p>Please <a href="{{ url_for('login') }}">Login</a> to comment.</p>
+            <p style="background: #eee; padding: 15px; border-radius: 8px; margin-top: 20px;">
+                <a href="/login">Login</a> to join the discussion.
+            </p>
         {% endif %}
 
-        <div class="comments-list" style="margin-top:30px;">
-            {% for comment in article.comments|sort(attribute='date_posted', reverse=True) %}
-            <div style="background: #f9f9f9; padding: 15px; border-radius: 8px; margin-bottom: 15px;">
-                <strong style="color: #1a6b3c;">{{ comment.author.fullname }}</strong>
-                <small style="color: #888; margin-left: 10px;">{{ comment.date_posted.strftime('%d %b') }}</small>
-                <p style="margin-top: 5px;">{{ comment.body }}</p>
-            </div>
+        <div style="margin-top: 40px;">
+            {% for comment in article.comments if not comment.parent_id %}
+                <div style="background: white; padding: 20px; border-radius: 8px; margin-bottom: 15px; border-left: 4px solid var(--primary);">
+                    <strong>{{ comment.author.fullname }}</strong>
+                    <p style="margin: 10px 0;">{{ comment.body }}</p>
+                    <div style="display: flex; gap: 15px; font-size: 0.9rem; color: #666;">
+                        <span><i class="far fa-thumbs-up"></i> Like</span>
+                        <span style="cursor: pointer;" onclick="document.getElementById('reply-{{comment.id}}').style.display='block'">Reply</span>
+                    </div>
+
+                    <!-- Nested Replies -->
+                    {% for reply in comment.replies %}
+                        <div style="margin-left: 40px; margin-top: 15px; padding-left: 15px; border-left: 2px solid #ddd;">
+                            <strong>{{ reply.author.fullname }}</strong>
+                            <p>{{ reply.body }}</p>
+                        </div>
+                    {% endfor %}
+
+                    <!-- Reply Form (Hidden by default) -->
+                    <form id="reply-{{comment.id}}" method="POST" style="display:none; margin-top: 15px;">
+                        <input type="hidden" name="parent_id" value="{{ comment.id }}">
+                        <textarea name="body" placeholder="Write a reply..." required style="width: 100%; padding: 10px; border-radius: 6px;"></textarea>
+                        <button type="submit" class="btn" style="padding: 5px 15px; margin-top: 5px;">Reply</button>
+                    </form>
+                </div>
             {% endfor %}
         </div>
     </section>

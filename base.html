@@ -3,56 +3,107 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Kilgoris News</title>
+    <title>Kilgoris News | Professional</title>
     <link rel="stylesheet" href="{{ url_for('static', filename='css/style.css') }}">
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.0.0/css/all.min.css">
 </head>
-<body>
-    <div class="ticker-wrapper">
-        <div class="ticker-label">BREAKING</div>
-        <div class="ticker-content">
-            <span>Welcome to Kilgoris News — Latest updates from Narok County...</span>
+
+<form action="/search" method="GET">
+    <input type="text" name="q" placeholder="Search...">
+    <button type="submit"><i class="fas fa-search"></i></button>
+</form>
+
+<header class="site-header">
+    <!-- Top Row: Search, Branding, and Auth -->
+    <div class="header-top container">
+        <div class="header-left">
+            <button class="search-btn"><i class="fas fa-search"></i></button>
         </div>
+        
+        <div class="header-center">
+            <a href="/" class="brand-link">
+                <div class="brand-wrapper">
+                    <span class="brand-box">KN.</span>
+                    <h1 class="brand-name">KILGORIS NEWS</h1>
+                </div>
+                <p class="brand-motto">SINCE 2026</p>
+            </a>
+        </div>
+
+        <div class="header-right">
+    <!-- Bright Donate Button -->
+    <a href="/donate" class="donate-btn">DONATE</a>
+
+    {% if not session.get('user_id') %}
+        <a href="/login" class="login-text">LOGIN</a>
+        <a href="/register" class="subscribe-btn">SUBSCRIBE NOW</a>
+    {% else %}
+        <a href="/logout" class="login-text">LOGOUT</a>
+        {% if session.get('is_admin') %}
+            <a href="/admin" class="subscribe-btn">POST NEWS</a>
+        {% endif %}
+    {% endif %}
+</div>
     </div>
 
-    <header>
-        <nav class="container">
-            <div class="logo" onclick="window.location.href='/'" style="cursor:pointer;">
-                <span class="monogram">KN</span> Kilgoris News
-            </div>
-            
+    <!-- Bottom Row: Navigation Categories -->
+    <nav class="category-nav">
+        <div class="container">
             <ul class="nav-menu">
-                <li><a href="/">Home</a></li>
-                <li><a href="/donate">Support Us</a></li>
+                <li><a href="/">HOME</a></li>
+                <li><a href="/category/politics">POLITICS</a></li>
+                <li><a href="/category/business">BUSINESS</a></li>
+                <li><a href="/category/counties">COUNTIES</a></li>
+                <li><a href="/category/world">WORLD</a></li>
+                <li><a href="/category/health">HEALTH</a></li>
+                <li><a href="/category/sports">SPORTS</a></li>
+                <li><a href="/category/entertainment">ENTERTAINMENT</a></li>
             </ul>
-
-            <div class="nav-auth">
-                {% if session.get('user_id') %}
-                    <span class="user-greeting">Hi, {{ session['user_name'].split()[0] }}</span>
-                    <a href="{{ url_for('admin_dashboard') }}" class="btn-login">Dashboard</a>
-                    <a href="{{ url_for('logout') }}" class="btn-login" style="color: #c0392b;">Logout</a>
-                {% else %}
-                    <a href="{{ url_for('login') }}" class="btn-login">Login</a>
-                    <a href="{{ url_for('register') }}" class="btn-signup">Sign Up</a>
-                {% endif %}
-            </div>
-        </nav>
-    </header>
+        </div>
+    </nav>
+</header>
+<body>
+    <nav class="navbar">
+        <!-- Your Navbar Code -->
+    </nav>
 
     <main class="container">
-        {% with messages = get_flashed_messages(with_categories=true) %}
-          {% if messages %}
-            {% for category, message in messages %}
-              <div style="padding:10px; margin-bottom:20px; border-radius:5px; background-color: #f8d7da; color: #721c24;">{{ message }}</div>
-            {% endfor %}
-          {% endif %}
-        {% endwith %}
-        {% block content %}{% endblock %}
+        {% block content %}
+        <!-- Content goes here -->
+        {% endblock %}
     </main>
 
     <footer>
-        <div class="container">
-            <p>&copy; 2026 Kilgoris News. Built by Ledama Samwel.</p>
+        <div class="footer-content">
+            <h3>KN. KILGORIS NEWS</h3>
+            <div class="social-links">
+                <a href="#"><i class="fab fa-facebook"></i></a>
+                <a href="#"><i class="fab fa-twitter"></i></a>
+                <a href="#"><i class="fab fa-whatsapp"></i></a>
+            </div>
+            <p style="margin-top: 20px; opacity: 0.8;">
+                &copy; 2026 Voice of Kilgoris. All Rights Reserved.
+            </p>
         </div>
     </footer>
+    <script>
+    document.addEventListener("DOMContentLoaded", function() {
+        const observer = new IntersectionObserver((entries) => {
+            entries.forEach(entry => {
+                if (entry.isIntersecting) {
+                    entry.target.style.opacity = 1;
+                    entry.target.style.transform = "translateY(0)";
+                }
+            });
+        });
+
+        document.querySelectorAll('.card').forEach(card => {
+            card.style.opacity = 0;
+            card.style.transform = "translateY(30px)";
+            card.style.transition = "all 0.6s ease-out";
+            observer.observe(card);
+        });
+    });
+</script>
 </body>
 </html>
