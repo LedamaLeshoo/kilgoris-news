@@ -8,39 +8,27 @@
     <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.0.0/css/all.min.css">
 </head>
 <body>
-    <header>
-        <nav class="navbar">
-    <a href="/" class="logo">
-        <span style="border: 2px solid var(--primary); padding: 2px 5px; margin-right: 5px;">KN.</span> 
-        KILGORIS NEWS
-    </a>
-    <div class="nav-links">
-        <a href="/" style="margin-right: 20px; text-decoration: none; color: var(--text);">Home</a>
-        {% if session.get('is_admin') %}
-            <a href="/admin" class="btn">Dashboard</a>
-        {% endif %}
-        {% if not session.get('user_id') %}
-            <a href="/login" style="margin-right: 20px; text-decoration: none;">Login</a>
-            <a href="/register" class="btn">Join Now</a>
-        {% else %}
-            <a href="/logout" style="text-decoration: none;">Logout</a>
-        {% endif %}
-    </div>
-</nav>
-    </header>
+    <nav class="navbar">
+        <!-- Your Navbar Code -->
+    </nav>
 
     <main class="container">
-        {% block content %}{% endblock %}
+        {% block content %}
+        <!-- Content goes here -->
+        {% endblock %}
     </main>
 
     <footer>
-        <div class="container">
-            <p>&copy; 2026 Kilgoris News. Verified Journalism.</p>
-            <div class="social-icons">
+        <div class="footer-content">
+            <h3>KN. KILGORIS NEWS</h3>
+            <div class="social-links">
                 <a href="#"><i class="fab fa-facebook"></i></a>
                 <a href="#"><i class="fab fa-twitter"></i></a>
                 <a href="#"><i class="fab fa-whatsapp"></i></a>
             </div>
+            <p style="margin-top: 20px; opacity: 0.8;">
+                &copy; 2026 Voice of Kilgoris. All Rights Reserved.
+            </p>
         </div>
     </footer>
 </body>
