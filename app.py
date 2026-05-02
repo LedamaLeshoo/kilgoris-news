@@ -182,6 +182,16 @@ def category(cat_name):
     category_posts = Article.query.filter_by(category=cat_name).order_by(Article.date_posted.desc()).all()
     return render_template('index.html', posts=category_posts, category_title=cat_name.upper())
 
+@app.route('/admin')
+def admin_dashboard():
+    # Only let admins in
+    if not session.get('is_admin'):
+        return redirect(url_for('login'))
+        
+    # Fetch all articles so you can see them on the dashboard
+    articles = Article.query.all()
+    return render_template('admin.html', articles=articles)
+
 @app.route('/donate')
 def donate():
     return render_template('donate.html')
