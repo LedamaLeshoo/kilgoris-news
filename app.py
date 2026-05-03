@@ -103,6 +103,11 @@ def register():
             
     return render_template('register.html')
 
+@app.route('/ads.txt')
+def ads_txt():
+    # This sends the raw file directly without "rendering" it as HTML
+    return send_from_directory(os.path.dirname(os.path.abspath(__file__)), 'ads.txt')
+
 @app.route('/verify', methods=['GET', 'POST'])
 def verify():
     if request.method == 'POST':
