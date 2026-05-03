@@ -185,7 +185,7 @@ def search():
 def category(cat_name):
     # Change 'posts' to 'articles' so the home page template can see them
     category_articles = Article.query.filter_by(category=cat_name).order_by(Article.date_posted.desc()).all()
-    return render_template('index.html', articles=category_articles, category_title=cat_name.upper())
+    return render_template('index.html', posts=category_posts, category_title=cat_name.upper())
 
 @app.route('/admin')
 def admin_dashboard():
