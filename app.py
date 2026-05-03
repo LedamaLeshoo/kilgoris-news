@@ -1,7 +1,7 @@
 import os
 import random
 import string
-from flask import Flask, render_template, request, redirect, url_for, flash, session
+from flask import Flask, render_template, request, redirect, url_for, flash, session, send_from_directory
 from flask_sqlalchemy import SQLAlchemy
 from flask_mail import Mail, Message
 from datetime import datetime
@@ -17,7 +17,7 @@ ALLOWED_EXTENSIONS = {'png', 'jpg', 'jpeg', 'gif', 'mp4', 'mov'}
 app.config['UPLOAD_FOLDER'] = UPLOAD_FOLDER
 app.config['MAX_CONTENT_LENGTH'] = 50 * 1024 * 1024  # 50MB limit
 
-# Email Config (Required for Verification)
+# Email Config
 app.config['MAIL_SERVER'] = 'smtp.gmail.com'
 app.config['MAIL_PORT'] = 587
 app.config['MAIL_USE_TLS'] = True
@@ -29,7 +29,7 @@ mail = Mail(app)
 database_url = os.environ.get('DATABASE_URL')
 if database_url and database_url.startswith("postgres://"):
     database_url = database_url.replace("postgres://", "postgresql://", 1)
-app.config['SQLALCHEMY_DATABASE_URI'] = database_url
+app.config['SQLALCHEMY_DATABASE_URI'] = database_url or 'sqlite:///kilgoris.db'
 app.config['SQLALCHEMY_TRACK_MODIFICATIONS'] = False
 db = SQLAlchemy(app)
 
@@ -69,6 +69,7 @@ class Comment(db.Model):
 @app.route('/')
 def home():
     articles = Article.query.order_by(Article.date_posted.desc()).all()
+    # Fixed to use index.html
     return render_template('index.html', articles=articles)
 
 @app.route('/register', methods=['GET', 'POST'])
@@ -90,7 +91,6 @@ def register():
         db.session.add(new_user)
         db.session.commit()
         
-        # Send Email
         try:
             msg = Message('Verify your Kilgoris News Account', sender='noreply@kilgorisnews.com', recipients=[email])
             msg.body = f"Your verification code is: {otp}"
@@ -105,7 +105,6 @@ def register():
 
 @app.route('/ads.txt')
 def ads_txt():
-    # This sends the raw file directly without "rendering" it as HTML
     return send_from_directory(os.path.dirname(os.path.abspath(__file__)), 'ads.txt')
 
 @app.route('/verify', methods=['GET', 'POST'])
@@ -130,21 +129,26 @@ def create_article():
         file = request.files.get('file')
         filename = 'default.jpg'
         is_video = False
+        
         if file:
             filename = secure_filename(file.filename)
             file.save(os.path.join(app.config['UPLOAD_FOLDER'], filename))
             if filename.lower().endswith(('.mp4', '.mov')):
                 is_video = True
         
+        # SAVE CATEGORY TO DB
         new_art = Article(
             title=request.form.get('title'),
             content=request.form.get('content'),
+            category=request.form.get('category'), # Essential for categories to work
             file_path=filename,
             is_video=is_video
         )
         db.session.add(new_art)
         db.session.commit()
+        flash("Article Published Successfully!", "success")
         return redirect(url_for('home'))
+        
     return render_template('create_article.html')
 
 @app.route('/login', methods=['GET', 'POST'])
@@ -172,30 +176,35 @@ def support():
 def search():
     query = request.args.get('q')
     if query:
-        # Search for the query inside titles or content
         results = Article.query.filter(
             (Article.title.contains(query)) | (Article.content.contains(query))
         ).all()
     else:
         results = []
-    # Changed 'posts' to 'articles' to match your index.html
+    # Fixed to use index.html
     return render_template('index.html', articles=results, category_title=f"SEARCH RESULTS FOR: {query}")
 
 @app.route('/category/<string:cat_name>')
 def category(cat_name):
-    # Change 'posts' to 'articles' so the home page template can see them
+    # Fixed to use index.html
     category_articles = Article.query.filter_by(category=cat_name).order_by(Article.date_posted.desc()).all()
-    return render_template('index.html', posts=category_posts, category_title=cat_name.upper())
+    return render_template('index.html', articles=category_articles, category_title=cat_name.upper())
 
 @app.route('/admin')
 def admin_dashboard():
-    # Only let admins in
     if not session.get('is_admin'):
         return redirect(url_for('login'))
-        
-    # Fetch all articles so you can see them on the dashboard
-    articles = Article.query.all()
+    articles = Article.query.order_by(Article.date_posted.desc()).all()
     return render_template('admin_dashboard.html', articles=articles)
+
+@app.route('/admin/delete/<int:article_id>')
+def delete_article(article_id):
+    if not session.get('is_admin'): return redirect(url_for('home'))
+    art = Article.query.get_or_404(article_id)
+    db.session.delete(art)
+    db.session.commit()
+    flash("Article deleted", "info")
+    return redirect(url_for('admin_dashboard'))
 
 @app.route('/donate')
 def donate():
