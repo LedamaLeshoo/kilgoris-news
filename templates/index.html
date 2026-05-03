@@ -5,26 +5,37 @@
     <p>Independent. Verified. Local. promising to deliver</p>
 </section>
 
+<!-- Category Title Support (Optional but helpful for navigation) -->
+{% if category_title %}
+    <h2 style="margin-bottom: 20px; color: var(--primary); border-left: 5px solid var(--accent); padding-left: 15px;">
+        {{ category_title }}
+    </h2>
+{% endif %}
+
 <div class="news-grid">
     {% for article in articles %}
     <div class="card">
         {% if article.is_video %}
             <video controls style="width: 100%; height: 250px; object-fit: cover;">
-                <source src="{{ url_for('static', filename='uploads/' + article.file_path) }}" type="video/mp4">
+                <!-- Updated to use direct URL from Cloudinary -->
+                <source src="{{ article.file_path }}" type="video/mp4">
             </video>
         {% else %}
-            <img src="{{ url_for('static', filename='uploads/' + article.file_path) }}" alt="News">
+            <!-- Updated to use direct URL from Cloudinary -->
+            <img src="{{ article.file_path }}" alt="News" style="width: 100%; height: 250px; object-fit: cover;">
         {% endif %}
         
         <div class="card-content">
-            <span style="color: var(--accent); font-weight: bold; text-transform: uppercase; font-size: 0.8rem;">Latest Update</span>
+            <span style="color: var(--accent); font-weight: bold; text-transform: uppercase; font-size: 0.8rem;">
+                {{ article.category if article.category else 'Latest Update' }}
+            </span>
             <h2>{{ article.title }}</h2>
             <p>{{ article.content[:120] }}...</p>
             <a href="{{ url_for('article', article_id=article.id) }}" class="btn" style="display: inline-block; margin-top: 15px; text-decoration: none;">Read More</a>
         </div>
     </div>
     {% else %}
-    <p>No stories found. Check back later!</p>
+    <p style="text-align: center; grid-column: 1/-1;">No stories found. Check back later!</p>
     {% endfor %}
 </div>
 {% endblock %}
