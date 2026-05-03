@@ -1,20 +1,26 @@
 import os
 import random
 import string
+import cloudinary
+import cloudinary.uploader
 from flask import Flask, render_template, request, redirect, url_for, flash, session, send_from_directory
 from flask_sqlalchemy import SQLAlchemy
 from flask_mail import Mail, Message
 from datetime import datetime
 from werkzeug.security import generate_password_hash, check_password_hash
-from werkzeug.utils import secure_filename
 
 app = Flask(__name__)
 app.secret_key = os.environ.get('SECRET_KEY', 'kilgoris_news_professional_2026')
 
+# --- CLOUDINARY CONFIGURATION ---
+# Using the Cloud Name from image_0b682a.png
+cloudinary.config( 
+  cloud_name = os.environ.get('CLOUDINARY_CLOUD_NAME', 'dfowijvky'), 
+  api_key = os.environ.get('CLOUDINARY_API_KEY'), 
+  api_secret = os.environ.get('CLOUDINARY_API_SECRET') 
+)
+
 # --- CONFIGURATION ---
-UPLOAD_FOLDER = os.path.join(os.path.dirname(os.path.abspath(__file__)), 'static/uploads')
-ALLOWED_EXTENSIONS = {'png', 'jpg', 'jpeg', 'gif', 'mp4', 'mov'}
-app.config['UPLOAD_FOLDER'] = UPLOAD_FOLDER
 app.config['MAX_CONTENT_LENGTH'] = 50 * 1024 * 1024  # 50MB limit
 
 # Email Config
@@ -50,7 +56,8 @@ class Article(db.Model):
     title = db.Column(db.String(200), nullable=False)
     content = db.Column(db.Text, nullable=False)
     date_posted = db.Column(db.DateTime, default=datetime.utcnow)
-    file_path = db.Column(db.String(100), default='default.jpg')
+    # Increased string length to 500 to store full Cloudinary URLs
+    file_path = db.Column(db.String(500), default='https://via.placeholder.com/800x400')
     is_video = db.Column(db.Boolean, default=False)
     category = db.Column(db.String(50))
     comments = db.relationship('Comment', backref='article', lazy=True, cascade="all, delete-orphan")
@@ -69,7 +76,6 @@ class Comment(db.Model):
 @app.route('/')
 def home():
     articles = Article.query.order_by(Article.date_posted.desc()).all()
-    # Fixed to use index.html
     return render_template('index.html', articles=articles)
 
 @app.route('/register', methods=['GET', 'POST'])
@@ -127,21 +133,22 @@ def create_article():
     
     if request.method == 'POST':
         file = request.files.get('file')
-        filename = 'default.jpg'
+        file_url = 'https://via.placeholder.com/800x400' # Default if no file
         is_video = False
         
         if file:
-            filename = secure_filename(file.filename)
-            file.save(os.path.join(app.config['UPLOAD_FOLDER'], filename))
-            if filename.lower().endswith(('.mp4', '.mov')):
+            # Step: Upload directly to Cloudinary using your account
+            upload_result = cloudinary.uploader.upload(file, resource_type="auto")
+            file_url = upload_result['secure_url'] 
+            
+            if file.filename.lower().endswith(('.mp4', '.mov')):
                 is_video = True
         
-        # SAVE CATEGORY TO DB
         new_art = Article(
             title=request.form.get('title'),
             content=request.form.get('content'),
-            category=request.form.get('category'), # Essential for categories to work
-            file_path=filename,
+            category=request.form.get('category'),
+            file_path=file_url, 
             is_video=is_video
         )
         db.session.add(new_art)
@@ -181,12 +188,10 @@ def search():
         ).all()
     else:
         results = []
-    # Fixed to use index.html
     return render_template('index.html', articles=results, category_title=f"SEARCH RESULTS FOR: {query}")
 
 @app.route('/category/<string:cat_name>')
 def category(cat_name):
-    # Fixed to use index.html
     category_articles = Article.query.filter_by(category=cat_name).order_by(Article.date_posted.desc()).all()
     return render_template('index.html', articles=category_articles, category_title=cat_name.upper())
 
