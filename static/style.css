@@ -1,190 +1,209 @@
-/* Core Layout to push footer down */
-html, body {
-    height: 100%;
+/* 1. ROOT VARIABLES - The Logo Colors */
+:root {
+    --navy: #011632;      /* Matches your KN logo blue */
+    --red: #bd081c;       /* Matches your KN logo red */
+    --white: #ffffff;
+    --light-bg: #f4f7f6;
+    --text-dark: #1a1a1a; /* Darker for better readability */
+    --gray-border: #e1e1e1;
+}
+
+/* 2. GLOBAL RESET & BASE TYPOGRAPHY */
+* {
     margin: 0;
+    padding: 0;
+    box-sizing: border-box;
 }
 
 body {
-    display: flex;
-    flex-direction: column;
-    background-color: #397bbd;
-    min-height: 100vh;
-    background-image: url(https://unsplash.com/photos/group-of-people-wearing-orange-and-yellow-traditional-dress-nayS2zjJpGw);
-    font-family: 'Inter', sans-serif;
+    font-family: 'Roboto', Arial, sans-serif;
+    background-color: var(--light-bg);
+    color: var(--text-dark);
+    line-height: 1.6;
+    font-size: 16px;
 }
 
-/* This pushes the footer to the bottom */
-main, .container {
-    flex: 1 0 auto;
+.container {
+    max-width: 1200px;
+    margin: 0 auto;
+    padding: 0 20px;
 }
 
-/* Bright, Vibrant Footer */
-footer {
-    flex-shrink: 0;
-    background: linear-gradient(45deg, #004d40, #00695c); /* Rich Green Gradient */
-    border-top: 5px solid #ffc107; /* Bright Gold accent line */
-    color: white;
-    margin-top: auto;
-    padding: 40px 0;
-    text-align: center;
-    box-shadow: 0 -5px 15px rgba(0,0,0,0.1);
-}
-.donate-btn {
-    background: #ff5722; /* Vibrant Orange-Red */
-    color: #fff;
-    padding: 8px 18px;
-    font-weight: 800;
-    text-decoration: none;
-    font-size: 0.75rem;
-    border-radius: 2px;
-    margin-right: 15px;
-    transition: background 0.3s ease;
-}
-
-.donate-btn:hover {
-    background: #e64a19; /* Darker shade on hover */
-    box-shadow: 0 4px 8px rgba(0,0,0,0.2);
-}
-
-/* Ensure the header-right remains aligned */
-.header-right {
-    display: flex;
-    align-items: center;
-    justify-content: flex-end;
-}
-
-.footer-content h3 {
-    color: #ffc107;
-    text-transform: uppercase;
-    letter-spacing: 2px;
-    font-size: 20px; 
-    margin-bottom: 15px;
-}
-
-.social-links a {
-    color: white;
-    font-size: 2.5rem;
-    margin: 0 15px;
-    transition: 0.3s;
-}
-
-.social-links a:hover {
-    color: #ffc107;
-    transform: scale(1.2);
-}
-
-/* Logo Animation & Style */
-.logo-box {
-    background: #ffc107;
-    color: #004d40;
-    padding: 5px 10px;
-    font-weight: 900;
-    border-radius: 4px;
-    margin-right: 8px;
-}
-/* Typography & Layout */
+/* 3. HEADER LAYOUT */
 .site-header {
-    background: #fff;
-    border-bottom: 4px solid #111;
-    position: sticky;
-    top: 0;
-    z-index: 1000;
+    background: var(--white);
+    border-bottom: 1px solid var(--gray-border);
 }
 
 .header-top {
-    display: grid;
-    grid-template-columns: 1fr 2fr 1fr;
+    display: flex;
     align-items: center;
-    padding: 15px 0;
+    justify-content: space-between;
+    padding: 20px 0;
 }
 
-/* Centered Branding */
-.brand-link {
-    text-align: center;
-    text-decoration: none;
-    color: #111;
+.main-logo {
+    height: 110px; 
+    width: auto;
     display: block;
 }
 
-.brand-wrapper {
+/* 4. LARGE CENTERED SEARCH */
+.header-center {
+    flex: 2;
     display: flex;
-    align-items: center;
     justify-content: center;
-    gap: 10px;
 }
 
-.brand-box {
-    border: 3px solid #111;
-    padding: 2px 8px;
-    font-weight: 900;
-    font-size: 1.8rem;
+.search-form {
+    display: flex;
+    width: 100%;
+    max-width: 600px;
+    border: 2px solid var(--navy);
+    border-radius: 4px;
+    overflow: hidden;
 }
 
-.brand-name {
-    font-size: 2.5rem;
-    font-weight: 900;
-    letter-spacing: -2px;
+.search-input {
+    flex-grow: 1;
+    padding: 14px 18px;
+    border: none;
+    outline: none;
+    font-size: 18px;
 }
 
-.brand-motto {
-    font-size: 0.7rem;
-    font-weight: 800;
-    letter-spacing: 4px;
-    margin-top: -5px;
+.search-submit {
+    background: var(--navy);
+    color: white;
+    border: none;
+    padding: 0 25px;
+    font-size: 20px;
+    cursor: pointer;
 }
 
-/* Navigation Categories */
+/* 5. NAVIGATION BAR */
 .category-nav {
-    border-top: 1px solid #eee;
+    background-color: var(--red);
+    box-shadow: 0 2px 8px rgba(0,0,0,0.15);
 }
 
 .nav-menu {
+    list-style: none;
     display: flex;
     justify-content: center;
-    list-style: none;
-    gap: 20px;
+    flex-wrap: wrap;
 }
 
 .nav-menu li a {
+    color: var(--white);
     text-decoration: none;
-    color: #111;
-    font-weight: 700;
-    font-size: 0.85rem;
-    padding: 15px 5px;
-    position: relative;
-    display: inline-block;
-}
-
-/* The Underline Animation */
-.nav-menu li a::after {
-    content: '';
-    position: absolute;
-    width: 0;
-    height: 3px;
-    bottom: 0;
-    left: 0;
-    background-color: #ffc107; /* Golden accent */
-    transition: width 0.3s ease;
-}
-
-.nav-menu li a:hover::after {
-    width: 100%;
-}
-
-/* Auth Buttons */
-.subscribe-btn {
-    background: #000;
-    color: #fff;
-    padding: 8px 18px;
     font-weight: 800;
-    text-decoration: none;
-    font-size: 0.75rem;
-    margin-left: 15px;
+    padding: 18px 22px;
+    display: block;
+    font-size: 18px;
+    text-transform: uppercase;
+    transition: background 0.3s;
 }
 
-.search-btn {
-    background: none;
+.nav-menu li a:hover {
+    background-color: var(--navy);
+}
+
+/* 6. ACTION BUTTONS & AUTH BUTTONS */
+.header-right {
+    flex: 1;
+    display: flex;
+    justify-content: flex-end;
+    align-items: center;
+    gap: 20px;
+}
+
+/* Standard Button Class (Used for Post Comment, Create Account, Login) */
+.btn, button[type="submit"] {
+    background-color: var(--navy);
+    color: var(--white);
+    padding: 12px 25px;
     border: none;
-    font-size: 1.6rem;
+    border-radius: 4px;
+    text-decoration: none;
+    font-weight: bold;
+    font-size: 16px;
     cursor: pointer;
+    transition: background 0.3s ease;
+    display: inline-block;
+    width: 100%; /* Makes login/register buttons full width like in your screenshots */
+    text-align: center;
+}
+
+.btn:hover, button[type="submit"]:hover {
+    background-color: var(--red);
+}
+
+.subscribe-btn {
+    background-color: #000000;
+    color: var(--white);
+    padding: 12px 25px;
+    border-radius: 4px;
+    text-decoration: none;
+    font-weight: bold;
+    font-size: 16px;
+    text-transform: uppercase;
+}
+
+.donate-btn {
+    background-color: #ff5722;
+    color: white;
+    padding: 12px 25px;
+    border-radius: 4px;
+    text-decoration: none;
+    font-weight: bold;
+    font-size: 16px;
+}
+
+.login-link {
+    color: var(--navy);
+    text-decoration: none;
+    font-weight: 700;
+    font-size: 16px;
+}
+
+/* Styling for "Don't have an account? Sign up here" */
+form p {
+    margin-top: 20px;
+    text-align: center;
+    font-size: 15px;
+}
+
+form p a {
+    color: var(--red);
+    font-weight: bold;
+    text-decoration: none;
+}
+
+form p a:hover {
+    text-decoration: underline;
+}
+
+/* 7. NEWS TITLES */
+h2, .article-title {
+    font-size: 24px;
+    font-weight: 800;
+    color: var(--navy);
+    margin-bottom: 10px;
+}
+
+/* 8. MINIMAL FOOTER */
+.minimal-footer {
+    background: var(--navy);
+    color: var(--white);
+    text-align: center;
+    padding: 40px 0;
+    margin-top: 60px;
+    border-top: 6px solid var(--red);
+}
+
+.minimal-footer p {
+    font-weight: bold;
+    font-size: 16px;
+    letter-spacing: 1px;
 }
