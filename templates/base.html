@@ -5,8 +5,15 @@
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>Kilgoris News | Professional</title>
+    <link rel="icon" type="image/png" href="https://res.cloudinary.com/dfowijvky/image/upload/v1777887790/imresizer-logo_cpmbvd.png">
     <link rel="stylesheet" href="{{ url_for('static', filename='css/style.css') }}">
     <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.0.0/css/all.min.css">
+    <!-- ADDED FOR MOBILE RESPONSIVENESS -->
+    <style>
+        .container { width: 95% !important; max-width: 1200px; margin: 0 auto; overflow-x: hidden; }
+        img, video { max-width: 100%; height: auto; }
+        body { overflow-x: hidden; width: 100%; }
+    </style>
 </head>
 
 
@@ -32,7 +39,7 @@
             <a href="/donate" class="donate-btn">DONATE</a>
             {% if not session.get('user_id') %}
                 <a href="/login" class="login-link">LOGIN</a>
-                <a href="/register" class="subscribe-btn">SUBSCRIBE</a>
+                <a href="/register" class="subscribe-btn">REGISTER</a>
             {% else %}
                 <a href="/logout" class="login-link">LOGOUT</a>
                 {% if session.get('is_admin') %}
@@ -75,7 +82,7 @@
     <div class="container">
         <p>&copy; 2026 KILGORIS NEWS. Informing. Connecting. Empowering.</p>
     </div>
-</footer>
+</footer >
   
     <script>
     document.addEventListener("DOMContentLoaded", function() {
