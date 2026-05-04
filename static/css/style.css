@@ -1,14 +1,14 @@
-/* 1. ROOT VARIABLES - The Logo Colors */
+/* 1. ROOT VARIABLES */
 :root {
-    --navy: #011632;      /* Matches your KN logo blue */
-    --red: #bd081c;       /* Matches your KN logo red */
+    --navy: #011632;
+    --red: #bd081c;
     --white: #ffffff;
     --light-bg: #f4f7f6;
-    --text-dark: #1a1a1a; /* Darker for better readability */
+    --text-dark: #1a1a1a;
     --gray-border: #e1e1e1;
 }
 
-/* 2. GLOBAL RESET & BASE TYPOGRAPHY */
+/* 2. GLOBAL RESET */
 * {
     margin: 0;
     padding: 0;
@@ -21,15 +21,16 @@ body {
     color: var(--text-dark);
     line-height: 1.6;
     font-size: 16px;
+    overflow-x: hidden; /* Prevent side scrolling */
 }
 
 .container {
     max-width: 1200px;
     margin: 0 auto;
-    padding: 0 20px;
+    padding: 0 15px;
 }
 
-/* 3. HEADER LAYOUT */
+/* 3. HEADER LAYOUT - UPDATED FOR MOBILE VISIBILITY */
 .site-header {
     background: var(--white);
     border-bottom: 1px solid var(--gray-border);
@@ -37,20 +38,23 @@ body {
 
 .header-top {
     display: flex;
+    flex-wrap: wrap; /* Allows items to drop to next line on mobile */
     align-items: center;
     justify-content: space-between;
-    padding: 20px 0;
+    padding: 15px 0;
+    gap: 10px;
 }
 
 .main-logo {
-    height: 110px; 
+    height: 70px; /* Reduced for mobile */
     width: auto;
     display: block;
 }
 
-/* 4. LARGE CENTERED SEARCH */
+/* 4. SEARCH BOX - RESPONSIVE */
 .header-center {
-    flex: 2;
+    flex: 1 1 100%; /* Takes full width on mobile */
+    order: 3; /* Pushes search below logo and buttons on mobile */
     display: flex;
     justify-content: center;
 }
@@ -66,25 +70,45 @@ body {
 
 .search-input {
     flex-grow: 1;
-    padding: 14px 18px;
+    padding: 10px;
     border: none;
     outline: none;
-    font-size: 18px;
+    font-size: 16px;
 }
 
 .search-submit {
     background: var(--navy);
     color: white;
     border: none;
-    padding: 0 25px;
-    font-size: 20px;
+    padding: 0 15px;
     cursor: pointer;
 }
 
-/* 5. NAVIGATION BAR */
+/* 5. ACTION BUTTONS - FIXED FOR MOBILE */
+.header-right {
+    display: flex;
+    justify-content: flex-end;
+    align-items: center;
+    gap: 10px;
+    order: 2; /* Keeps buttons at the top right next to logo */
+}
+
+.subscribe-btn, .donate-btn, .login-link {
+    padding: 8px 12px;
+    font-size: 14px;
+    text-decoration: none;
+    font-weight: bold;
+    border-radius: 4px;
+    white-space: nowrap; /* Keeps text on one line */
+}
+
+.subscribe-btn { background: #000; color: #fff; }
+.donate-btn { background: #ff5722; color: #fff; }
+.login-link { color: var(--navy); }
+
+/* 6. NAVIGATION MENU */
 .category-nav {
     background-color: var(--red);
-    box-shadow: 0 2px 8px rgba(0,0,0,0.15);
 }
 
 .nav-menu {
@@ -98,112 +122,39 @@ body {
     color: var(--white);
     text-decoration: none;
     font-weight: 800;
-    padding: 18px 22px;
+    padding: 12px 15px;
     display: block;
-    font-size: 18px;
+    font-size: 14px;
     text-transform: uppercase;
-    transition: background 0.3s;
 }
 
-.nav-menu li a:hover {
-    background-color: var(--navy);
-}
-
-/* 6. ACTION BUTTONS & AUTH BUTTONS */
-.header-right {
-    flex: 1;
-    display: flex;
-    justify-content: flex-end;
-    align-items: center;
-    gap: 20px;
-}
-
-/* Standard Button Class (Used for Post Comment, Create Account, Login) */
+/* 7. AUTH FORMS (Login/Register) */
 .btn, button[type="submit"] {
     background-color: var(--navy);
     color: var(--white);
-    padding: 12px 25px;
+    padding: 12px;
     border: none;
     border-radius: 4px;
-    text-decoration: none;
     font-weight: bold;
-    font-size: 16px;
+    width: 100%;
     cursor: pointer;
-    transition: background 0.3s ease;
-    display: inline-block;
-    width: 100%; /* Makes login/register buttons full width like in your screenshots */
-    text-align: center;
 }
 
-.btn:hover, button[type="submit"]:hover {
-    background-color: var(--red);
+/* 8. MEDIA QUERIES FOR LARGER SCREENS */
+@media (min-width: 768px) {
+    .main-logo { height: 110px; }
+    .header-center { flex: 2; order: 2; }
+    .header-right { order: 3; }
+    .nav-menu li a { font-size: 18px; padding: 18px 22px; }
+    .subscribe-btn, .donate-btn, .login-link { padding: 12px 25px; font-size: 16px; }
 }
 
-.subscribe-btn {
-    background-color: #000000;
-    color: var(--white);
-    padding: 12px 25px;
-    border-radius: 4px;
-    text-decoration: none;
-    font-weight: bold;
-    font-size: 16px;
-    text-transform: uppercase;
-}
-
-.donate-btn {
-    background-color: #ff5722;
-    color: white;
-    padding: 12px 25px;
-    border-radius: 4px;
-    text-decoration: none;
-    font-weight: bold;
-    font-size: 16px;
-}
-
-.login-link {
-    color: var(--navy);
-    text-decoration: none;
-    font-weight: 700;
-    font-size: 16px;
-}
-
-/* Styling for "Don't have an account? Sign up here" */
-form p {
-    margin-top: 20px;
-    text-align: center;
-    font-size: 15px;
-}
-
-form p a {
-    color: var(--red);
-    font-weight: bold;
-    text-decoration: none;
-}
-
-form p a:hover {
-    text-decoration: underline;
-}
-
-/* 7. NEWS TITLES */
-h2, .article-title {
-    font-size: 24px;
-    font-weight: 800;
-    color: var(--navy);
-    margin-bottom: 10px;
-}
-
-/* 8. MINIMAL FOOTER */
+/* FOOTER */
 .minimal-footer {
     background: var(--navy);
     color: var(--white);
     text-align: center;
-    padding: 40px 0;
-    margin-top: 60px;
+    padding: 20px 0;
+    margin-top: 40px;
     border-top: 6px solid var(--red);
-}
-
-.minimal-footer p {
-    font-weight: bold;
-    font-size: 16px;
-    letter-spacing: 1px;
 }
