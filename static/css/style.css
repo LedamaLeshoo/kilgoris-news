@@ -16,12 +16,11 @@
 }
 
 body {
-    /* Using Roboto or system fonts for that clean news look */
     font-family: 'Roboto', Arial, sans-serif;
     background-color: var(--light-bg);
     color: var(--text-dark);
     line-height: 1.6;
-    font-size: 16px; /* Standard base font size */
+    font-size: 16px;
 }
 
 .container {
@@ -40,17 +39,16 @@ body {
     display: flex;
     align-items: center;
     justify-content: space-between;
-    padding: 20px 0; /* More breathing room */
+    padding: 20px 0;
 }
 
-/* Logo Size */
 .main-logo {
     height: 110px; 
     width: auto;
     display: block;
 }
 
-/* 4. LARGE CENTERED SEARCH (Tuko Style) */
+/* 4. LARGE CENTERED SEARCH */
 .header-center {
     flex: 2;
     display: flex;
@@ -60,7 +58,7 @@ body {
 .search-form {
     display: flex;
     width: 100%;
-    max-width: 600px; /* Wider search bar */
+    max-width: 600px;
     border: 2px solid var(--navy);
     border-radius: 4px;
     overflow: hidden;
@@ -68,10 +66,10 @@ body {
 
 .search-input {
     flex-grow: 1;
-    padding: 14px 18px; /* Bigger input */
+    padding: 14px 18px;
     border: none;
     outline: none;
-    font-size: 18px; /* Highly readable font size */
+    font-size: 18px;
 }
 
 .search-submit {
@@ -83,7 +81,7 @@ body {
     cursor: pointer;
 }
 
-/* 5. NAVIGATION BAR (Bold & Large) */
+/* 5. NAVIGATION BAR */
 .category-nav {
     background-color: var(--red);
     box-shadow: 0 2px 8px rgba(0,0,0,0.15);
@@ -93,16 +91,16 @@ body {
     list-style: none;
     display: flex;
     justify-content: center;
-    flex-wrap: wrap; /* Prevents text breaking on small screens */
+    flex-wrap: wrap;
 }
 
 .nav-menu li a {
     color: var(--white);
     text-decoration: none;
-    font-weight: 800; /* Extra bold like Tuko */
-    padding: 18px 22px; /* Large clickable areas */
+    font-weight: 800;
+    padding: 18px 22px;
     display: block;
-    font-size: 18px; /* Standard Tuko-style navigation size */
+    font-size: 18px;
     text-transform: uppercase;
     transition: background 0.3s;
 }
@@ -111,7 +109,7 @@ body {
     background-color: var(--navy);
 }
 
-/* 6. ACTION BUTTONS */
+/* 6. ACTION BUTTONS & AUTH BUTTONS */
 .header-right {
     flex: 1;
     display: flex;
@@ -120,8 +118,29 @@ body {
     gap: 20px;
 }
 
+/* Standard Button Class (Used for Post Comment, Create Account, Login) */
+.btn, button[type="submit"] {
+    background-color: var(--navy);
+    color: var(--white);
+    padding: 12px 25px;
+    border: none;
+    border-radius: 4px;
+    text-decoration: none;
+    font-weight: bold;
+    font-size: 16px;
+    cursor: pointer;
+    transition: background 0.3s ease;
+    display: inline-block;
+    width: 100%; /* Makes login/register buttons full width like in your screenshots */
+    text-align: center;
+}
+
+.btn:hover, button[type="submit"]:hover {
+    background-color: var(--red);
+}
+
 .subscribe-btn {
-    background-color: #000000; /* Contrast button */
+    background-color: #000000;
     color: var(--white);
     padding: 12px 25px;
     border-radius: 4px;
@@ -132,7 +151,7 @@ body {
 }
 
 .donate-btn {
-    background-color: #ff5722; /* Bright orange for attention */
+    background-color: #ff5722;
     color: white;
     padding: 12px 25px;
     border-radius: 4px;
@@ -146,16 +165,28 @@ body {
     text-decoration: none;
     font-weight: 700;
     font-size: 16px;
-    border-bottom: 2px solid transparent;
 }
 
-.login-link:hover {
-    border-bottom: 2px solid var(--navy);
+/* Styling for "Don't have an account? Sign up here" */
+form p {
+    margin-top: 20px;
+    text-align: center;
+    font-size: 15px;
 }
 
-/* 7. NEWS TITLES (On index.html) */
+form p a {
+    color: var(--red);
+    font-weight: bold;
+    text-decoration: none;
+}
+
+form p a:hover {
+    text-decoration: underline;
+}
+
+/* 7. NEWS TITLES */
 h2, .article-title {
-    font-size: 24px; /* Big, bold headlines */
+    font-size: 24px;
     font-weight: 800;
     color: var(--navy);
     margin-bottom: 10px;
