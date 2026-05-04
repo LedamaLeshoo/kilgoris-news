@@ -1,27 +1,24 @@
 {% extends 'base.html' %}
 {% block content %}
-<section class="hero" style="background: var(--primary); color: #011632; padding: 65px 0; text-align: center; border-radius: 14px; margin-bottom: 40px;">
-    <h1>Voice of Kilgoris</h1>
+<section class="hero" style="background: var(--primary); color: #011632; padding: 40px 15px; text-align: center; border-radius: 14px; margin-bottom: 30px;">
+    <h1 style="font-size: clamp(1.5rem, 8vw, 2.5rem);">Voice of Kilgoris</h1>
     <p>Independent. Verified. Local. promising to deliver</p>
 </section>
 
-<!-- Category Title Support (Optional but helpful for navigation) -->
 {% if category_title %}
     <h2 style="margin-bottom: 20px; color: var(--primary); border-left: 5px solid var(--accent); padding-left: 15px;">
         {{ category_title }}
     </h2>
 {% endif %}
 
-<div class="news-grid">
+<div class="news-grid" style="display: grid; grid-template-columns: repeat(auto-fit, minmax(280px, 1fr)); gap: 20px; width: 100%;">
     {% for article in articles %}
-    <div class="card">
+    <div class="card" style="width: 100%; box-sizing: border-box;">
         {% if article.is_video %}
             <video controls style="width: 100%; height: 250px; object-fit: cover;">
-                <!-- Updated to use direct URL from Cloudinary -->
                 <source src="{{ article.file_path }}" type="video/mp4">
             </video>
         {% else %}
-            <!-- Updated to use direct URL from Cloudinary -->
             <img src="{{ article.file_path }}" alt="News" style="width: 100%; height: 250px; object-fit: contain; background-color: #f0f0f0;">
         {% endif %}
         
@@ -29,8 +26,8 @@
             <span style="color: var(--accent); font-weight: bold; text-transform: uppercase; font-size: 0.8rem;">
                 {{ article.category if article.category else 'Latest Update' }}
             </span>
-            <h2>{{ article.title }}</h2>
-            <p>{{ article.content[:120] }}...</p>
+            <h2 style="font-size: 1.3rem;">{{ article.title }}</h2>
+            <p>{{ article.content[:100] }}...</p>
             <a href="{{ url_for('article', article_id=article.id) }}" class="btn" style="display: inline-block; margin-top: 15px; text-decoration: none;">Read More</a>
         </div>
     </div>

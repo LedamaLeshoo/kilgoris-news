@@ -1,25 +1,23 @@
 {% extends 'base.html' %}
 {% block content %}
-<article style="max-width: 900px; margin: 0 auto; padding: 40px 0;">
-    <h1 style="font-size: 2.5rem; margin-bottom: 20px;">{{ article.title }}</h1>
+<article style="max-width: 900px; width: 95%; margin: 0 auto; padding: 20px 0; overflow-x: hidden;">
+    <h1 style="font-size: clamp(1.8rem, 8vw, 2.5rem); margin-bottom: 20px;">{{ article.title }}</h1>
     <p style="color: #666; margin-bottom: 20px;">Published on {{ article.date_posted.strftime('%B %d, %Y') }}</p>
 
     {% if article.is_video %}
         <video controls style="width: 100%; border-radius: 12px; margin-bottom: 30px;">
-            <!-- Updated to Cloudinary URL -->
             <source src="{{ article.file_path }}" type="video/mp4">
         </video>
     {% else %}
-        <!-- Updated to Cloudinary URL -->
         <img src="{{ article.file_path }}" style="width: 100%; border-radius: 12px; margin-bottom: 30px;" alt="{{ article.title }}">
     {% endif %}
 
-    <div style="font-size: 1.2rem; line-height: 1.8; color: #333; white-space: pre-wrap;">
+    <div style="font-size: 1.1rem; line-height: 1.7; color: #333; white-space: pre-wrap; word-wrap: break-word;">
         {{ article.content }}
     </div>
 
     <!-- Social Share Section (Now Functional) -->
-    <div style="margin-top: 40px; padding: 20px; border-top: 1px solid #eee; display: flex; gap: 20px; align-items: center;">
+    <div style="margin-top: 40px; padding: 20px; border-top: 1px solid #eee; display: flex; flex-wrap: wrap; gap: 20px; align-items: center;">
         <strong>Share:</strong>
         <a href="https://api.whatsapp.com/send?text=Read this on Kilgoris News: {{ article.title }} - {{ request.url }}" target="_blank" style="color: #25D366; font-size: 1.5rem;"><i class="fab fa-whatsapp"></i></a>
         <a href="https://www.facebook.com/sharer/sharer.php?u={{ request.url }}" target="_blank" style="color: #1877F2; font-size: 1.5rem;"><i class="fab fa-facebook"></i></a>
@@ -49,7 +47,6 @@
                     <p style="margin: 10px 0;">{{ comment.body }}</p>
                     
                     <div style="display: flex; gap: 20px; font-size: 0.9rem; color: #666;">
-                        <!-- Reaction Part (Made Clickable) -->
                         <span style="cursor: pointer; transition: 0.3s;" onclick="toggleLike(this)">
                             <i class="far fa-thumbs-up"></i> <span class="like-count">0</span> Likes
                         </span>
@@ -59,15 +56,13 @@
                         </span>
                     </div>
 
-                    <!-- Nested Replies -->
                     {% for reply in comment.replies %}
-                        <div style="margin-left: 40px; margin-top: 15px; padding-left: 15px; border-left: 2px solid #ddd; font-size: 0.95rem;">
+                        <div style="margin-left: 20px; margin-top: 15px; padding-left: 10px; border-left: 2px solid #ddd; font-size: 0.95rem;">
                             <strong>{{ reply.author.fullname }}</strong>
                             <p>{{ reply.body }}</p>
                         </div>
                     {% endfor %}
 
-                    <!-- Reply Form (Hidden by default) -->
                     <form id="reply-{{comment.id}}" method="POST" style="display:none; margin-top: 15px;">
                         <input type="hidden" name="parent_id" value="{{ comment.id }}">
                         <textarea name="body" placeholder="Write a reply..." required style="width: 100%; padding: 10px; border-radius: 6px; border: 1px solid #eee;"></textarea>
@@ -79,20 +74,16 @@
     </section>
 </article>
 
-<!-- Script for Reactions -->
 <script>
 function toggleLike(element) {
     const icon = element.querySelector('i');
     const countSpan = element.querySelector('.like-count');
     let count = parseInt(countSpan.innerText);
-
     if (icon.classList.contains('far')) {
-        // User liked
         icon.classList.replace('far', 'fas');
         icon.style.color = 'var(--primary)';
         countSpan.innerText = count + 1;
     } else {
-        // User unliked
         icon.classList.replace('fas', 'far');
         icon.style.color = '#666';
         countSpan.innerText = count - 1;
