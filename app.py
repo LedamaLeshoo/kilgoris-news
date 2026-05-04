@@ -8,12 +8,15 @@ from flask_sqlalchemy import SQLAlchemy
 from flask_mail import Mail, Message
 from datetime import datetime
 from werkzeug.security import generate_password_hash, check_password_hash
+from itsdangerous import URLSafeTimedSerializer # For secure tokens
 
 app = Flask(__name__)
 app.secret_key = os.environ.get('SECRET_KEY', 'kilgoris_news_professional_2026')
 
+# Serializer for password reset links
+s = URLSafeTimedSerializer(app.config['SECRET_KEY'])
+
 # --- CLOUDINARY CONFIGURATION ---
-# Using the Cloud Name from image_0b682a.png
 cloudinary.config( 
   cloud_name = os.environ.get('CLOUDINARY_CLOUD_NAME', 'dfowijvky'), 
   api_key = os.environ.get('CLOUDINARY_API_KEY'), 
@@ -21,7 +24,7 @@ cloudinary.config(
 )
 
 # --- CONFIGURATION ---
-app.config['MAX_CONTENT_LENGTH'] = 50 * 1024 * 1024  # 50MB limit
+app.config['MAX_CONTENT_LENGTH'] = 50 * 1024 * 1024
 
 # Email Config
 app.config['MAIL_SERVER'] = 'smtp.gmail.com'
@@ -56,7 +59,6 @@ class Article(db.Model):
     title = db.Column(db.String(200), nullable=False)
     content = db.Column(db.Text, nullable=False)
     date_posted = db.Column(db.DateTime, default=datetime.utcnow)
-    # Increased string length to 500 to store full Cloudinary URLs
     file_path = db.Column(db.String(500), default='https://via.placeholder.com/800x400')
     is_video = db.Column(db.Boolean, default=False)
     category = db.Column(db.String(50))
@@ -98,7 +100,7 @@ def register():
         db.session.commit()
         
         try:
-            msg = Message('Verify your Kilgoris News Account', sender='noreply@kilgorisnews.com', recipients=[email])
+            msg = Message('Verify your Kilgoris News Account', sender=app.config['MAIL_USERNAME'], recipients=[email])
             msg.body = f"Your verification code is: {otp}"
             mail.send(msg)
             session['verify_email'] = email
@@ -109,9 +111,36 @@ def register():
             
     return render_template('register.html')
 
-@app.route('/ads.txt')
-def ads_txt():
-    return send_from_directory(os.path.dirname(os.path.abspath(__file__)), 'ads.txt')
+@app.route('/forgot_password', methods=['GET', 'POST'])
+def forgot_password():
+    if request.method == 'POST':
+        email = request.form.get('email')
+        user = User.query.filter_by(email=email).first()
+        if user:
+            token = s.dumps(email, salt='password-reset-salt')
+            link = url_for('reset_password', token=token, _external=True)
+            msg = Message('Password Reset Request', sender=app.config['MAIL_USERNAME'], recipients=[email])
+            msg.body = f'To reset your password, visit: {link}'
+            mail.send(msg)
+            flash('Reset link sent to your email.', 'info')
+            return redirect(url_for('login'))
+        flash('Email not found.', 'danger')
+    return render_template('forgot_password.html')
+
+@app.route('/reset_password/<token>', methods=['GET', 'POST'])
+def reset_password(token):
+    try:
+        email = s.loads(token, salt='password-reset-salt', max_age=1800)
+    except:
+        flash('Link expired or invalid.', 'danger')
+        return redirect(url_for('forgot_password'))
+    if request.method == 'POST':
+        user = User.query.filter_by(email=email).first()
+        user.password = generate_password_hash(request.form.get('password'))
+        db.session.commit()
+        flash('Password updated!', 'success')
+        return redirect(url_for('login'))
+    return render_template('reset_token.html')
 
 @app.route('/verify', methods=['GET', 'POST'])
 def verify():
@@ -130,32 +159,20 @@ def create_article():
     if not session.get('is_admin'):
         flash("Unauthorized access", "danger")
         return redirect(url_for('home'))
-    
     if request.method == 'POST':
         file = request.files.get('file')
-        file_url = 'https://via.placeholder.com/800x400' # Default if no file
+        file_url = 'https://via.placeholder.com/800x400'
         is_video = False
-        
         if file:
-            # Step: Upload directly to Cloudinary using your account
-            upload_result = cloudinary.uploader.upload(file, resource_type="auto")
+            upload_result = cloudinary.uploader.upload(file, resource_type="auto", transformation=[{'width': 800, 'height': 500, 'crop': 'fill', 'gravity': 'auto'}])
             file_url = upload_result['secure_url'] 
-            
             if file.filename.lower().endswith(('.mp4', '.mov')):
                 is_video = True
-        
-        new_art = Article(
-            title=request.form.get('title'),
-            content=request.form.get('content'),
-            category=request.form.get('category'),
-            file_path=file_url, 
-            is_video=is_video
-        )
+        new_art = Article(title=request.form.get('title'), content=request.form.get('content'), category=request.form.get('category'), file_path=file_url, is_video=is_video)
         db.session.add(new_art)
         db.session.commit()
         flash("Article Published Successfully!", "success")
         return redirect(url_for('home'))
-        
     return render_template('create_article.html')
 
 @app.route('/login', methods=['GET', 'POST'])
@@ -182,12 +199,7 @@ def support():
 @app.route('/search')
 def search():
     query = request.args.get('q')
-    if query:
-        results = Article.query.filter(
-            (Article.title.contains(query)) | (Article.content.contains(query))
-        ).all()
-    else:
-        results = []
+    results = Article.query.filter((Article.title.contains(query)) | (Article.content.contains(query))).all() if query else []
     return render_template('index.html', articles=results, category_title=f"SEARCH RESULTS FOR: {query}")
 
 @app.route('/category/<string:cat_name>')
@@ -197,8 +209,7 @@ def category(cat_name):
 
 @app.route('/admin')
 def admin_dashboard():
-    if not session.get('is_admin'):
-        return redirect(url_for('login'))
+    if not session.get('is_admin'): return redirect(url_for('login'))
     articles = Article.query.order_by(Article.date_posted.desc()).all()
     return render_template('admin_dashboard.html', articles=articles)
 
@@ -220,16 +231,15 @@ def article(article_id):
     art = Article.query.get_or_404(article_id)
     if request.method == 'POST':
         if not session.get('user_id'): return redirect(url_for('login'))
-        comment = Comment(
-            body=request.form.get('body'),
-            article_id=article_id,
-            user_id=session['user_id'],
-            parent_id=request.form.get('parent_id')
-        )
+        comment = Comment(body=request.form.get('body'), article_id=article_id, user_id=session['user_id'], parent_id=request.form.get('parent_id'))
         db.session.add(comment)
         db.session.commit()
         return redirect(url_for('article', article_id=article_id))
     return render_template('article.html', article=art)
+
+@app.route('/ads.txt')
+def ads_txt():
+    return send_from_directory(os.path.dirname(os.path.abspath(__file__)), 'ads.txt')
 
 with app.app_context():
     db.create_all()
