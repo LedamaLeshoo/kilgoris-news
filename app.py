@@ -8,12 +8,12 @@ from flask_sqlalchemy import SQLAlchemy
 from flask_mail import Mail, Message
 from datetime import datetime
 from werkzeug.security import generate_password_hash, check_password_hash
-from itsdangerous import URLSafeTimedSerializer # Added for secure reset tokens[cite: 8]
+from itsdangerous import URLSafeTimedSerializer
 
 app = Flask(__name__)
 app.secret_key = os.environ.get('SECRET_KEY', 'kilgoris_news_professional_2026')
 
-# Serializer for password reset links[cite: 8]
+# Serializer for password reset links
 s = URLSafeTimedSerializer(app.config['SECRET_KEY'])
 
 # --- CLOUDINARY CONFIGURATION ---
@@ -111,7 +111,6 @@ def register():
             
     return render_template('register.html')
 
-# --- NEW: FORGOT PASSWORD ROUTE[cite: 8] ---
 @app.route('/forgot_password', methods=['GET', 'POST'])
 def forgot_password():
     if request.method == 'POST':
@@ -128,7 +127,6 @@ def forgot_password():
         flash('Email not found.', 'danger')
     return render_template('forgot_password.html')
 
-# --- NEW: RESET PASSWORD ROUTE[cite: 8] ---
 @app.route('/reset_password/<token>', methods=['GET', 'POST'])
 def reset_password(token):
     try:
@@ -156,7 +154,6 @@ def verify():
         flash("Invalid code", "danger")
     return render_template('verify.html')
 
-# --- UPDATED: CREATE ARTICLE ROUTE WITH VIDEO FIX[cite: 8] ---
 @app.route('/admin/post', methods=['GET', 'POST'])
 def create_article():
     if not session.get('is_admin'):
@@ -167,18 +164,17 @@ def create_article():
         file_url = 'https://via.placeholder.com/800x400'
         is_video = False
         if file and file.filename != '':
-            file.seek(0) # Reset pointer to fix potential 0-byte upload[cite: 8]
+            file.seek(0)
             if file.filename.lower().endswith(('.mp4', '.mov', '.avi', '.mkv')):
                 is_video = True
             
             try:
-                # Use explicit resource_type for videos[cite: 8]
                 upload_result = cloudinary.uploader.upload(
                     file, 
                     resource_type="video" if is_video else "image",
                     transformation=[
                         {'width': 800, 'height': 500, 'crop': 'fill', 'gravity': 'auto'}
-                    ] if not is_video else [] # Skip transformations for video test[cite: 8]
+                    ] if not is_video else []
                 )
                 file_url = upload_result.get('secure_url')
             except Exception as e:
@@ -264,6 +260,11 @@ def article(article_id):
 @app.route('/ads.txt')
 def ads_txt():
     return send_from_directory(os.path.dirname(os.path.abspath(__file__)), 'ads.txt')
+
+# --- NEW ROUTE FOR PRIVACY POLICY ---
+@app.route('/privacy-policy')
+def privacy_policy():
+    return render_template('privacy.html')
 
 with app.app_context():
     db.create_all()
