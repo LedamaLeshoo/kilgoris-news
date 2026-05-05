@@ -1,91 +1,70 @@
 {% extends 'base.html' %}
 {% block content %}
-<article style="max-width: 900px; width: 95%; margin: 0 auto; padding: 20px 0; overflow-x: hidden;">
-    <h1 style="font-size: clamp(1.8rem, 8vw, 2.5rem); margin-bottom: 20px;">{{ article.title }}</h1>
-    <p style="color: #666; margin-bottom: 20px;">Published on {{ article.date_posted.strftime('%B %d, %Y') }} • <i class="fas fa-eye"></i> {{ article.views or 0 }} views</p>
+<article style="max-width: 900px; margin: 0 auto; padding: 40px 0;\">
+    <h1 style="font-size: 2.5rem; margin-bottom: 20px;\">{{ article.title }}</h1>
+    
+    <div style="display: flex; gap: 20px; color: #666; margin-bottom: 20px; font-size: 0.95rem; align-items: center;\">
+        <p style="margin: 0;\">Published on {{ article.date_posted.strftime('%B %d, %Y') }}</p>
+        <span>•</span>
+        <span><i class="fas fa-eye"></i> {{ article.views or 0 }} views</span>
+    </div>
 
     {% if article.is_video %}
-        <video controls style="width: 100%; border-radius: 12px; margin-bottom: 30px;">
+        <video controls style="width: 100%; border-radius: 12px; margin-bottom: 30px;\">
             <source src="{{ article.file_path }}" type="video/mp4">
         </video>
     {% else %}
-        <img src="{{ article.file_path }}" style="width: 100%; border-radius: 12px; margin-bottom: 30px;" alt="{{ article.title }}">
+        <img src="{{ article.file_path }}" style="width: 100%; border-radius: 12px; margin-bottom: 30px;\" alt=\"{{ article.title }}\">
     {% endif %}
 
-    <div style="font-size: 1.1rem; line-height: 1.7; color: #333; white-space: pre-wrap; word-wrap: break-word;">
+    <div style="font-size: 1.2rem; line-height: 1.8; color: #333; white-space: pre-wrap;\">
         {{ article.content }}
     </div>
 
-    <div style="margin-top: 40px; padding: 20px; border-top: 1px solid #eee; display: flex; flex-wrap: wrap; gap: 20px; align-items: center;">
-        <strong>Share:</strong>
-        <a href="https://api.whatsapp.com/send?text=Read this on Kilgoris News: {{ article.title }} - {{ request.url }}" target="_blank" style="color: #25D366; font-size: 1.5rem;"><i class="fab fa-whatsapp"></i></a>
-        <a href="https://www.facebook.com/sharer/sharer.php?u={{ request.url }}" target="_blank" style="color: #1877F2; font-size: 1.5rem;"><i class="fab fa-facebook"></i></a>
-        <a href="https://twitter.com/intent/tweet?text={{ article.title }}&url={{ request.url }}" target="_blank" style="color: #1DA1F2; font-size: 1.5rem;"><i class="fab fa-twitter"></i></a>
-        <button onclick="navigator.share({title: '{{ article.title }}', url: '{{ request.url }}'})" style="background: none; border: none; color: var(--primary); cursor: pointer; font-size: 1.2rem;"><i class="fas fa-share-alt"></i></button>
+    <div style="margin-top: 40px; padding: 20px; border-top: 1px solid #eee; display: flex; gap: 15px; align-items: center;\">
+        <strong>Share story:</strong>
+        <a href="https://www.facebook.com/sharer/sharer.php?u={{ request.url }}" target="_blank" style="color: #3b5998; font-size: 1.3rem;\"><i class="fab fa-facebook"></i></a>
+        <a href="https://twitter.com/intent/tweet?url={{ request.url }}&text={{ article.title }}" target="_blank" style="color: #1da1f2; font-size: 1.3rem;\"><i class="fab fa-twitter"></i></a>
+        <a href="https://api.whatsapp.com/send?text={{ article.title }}%20{{ request.url }}" target="_blank" style="color: #25d366; font-size: 1.3rem;\"><i class="fab fa-whatsapp"></i></a>
     </div>
 
-    <section style="margin-top: 60px;">
-        <h3>Community Discussion ({{ article.comments|length }})</h3>
-        
+    <section style="margin-top: 50px;\">
+        <h3>Discussion ({{ article.comments|length }})</h3>
         {% if session.get('user_id') %}
-            <form method="POST" style="margin-top: 20px;">
-                <textarea name="body" placeholder="Join the conversation..." required style="width: 100%; padding: 15px; border-radius: 8px; border: 1px solid #ddd;"></textarea>
-                <button type="submit" class="btn" style="margin-top: 10px;">Post Comment</button>
+            <form method="POST" style="margin-bottom: 30px;\">
+                <textarea name="body" placeholder="Join the discussion safely..." required style="width: 100%; padding: 15px; border-radius: 8px; border: 1px solid #ddd; min-height: 100px;\"></textarea>
+                <button type="submit" class="btn" style="margin-top: 10px;\">Post Comment</button>
             </form>
         {% else %}
-            <p style="background: #eee; padding: 15px; border-radius: 8px; margin-top: 20px;">
-                <a href="{{ url_for('login') }}">Login</a> to join the discussion.
-            </p>
+            <p><a href="{{ url_for('login') }}">Log in</a> to leave verified community statements.</p>
         {% endif %}
 
-        <div style="margin-top: 40px;">
+        <div style="margin-top: 20px;\">
             {% for comment in article.comments if not comment.parent_id %}
-                <div style="background: white; padding: 20px; border-radius: 8px; margin-bottom: 15px; border-left: 4px solid var(--primary); box-shadow: 0 2px 5px rgba(0,0,0,0.05);">
+                <div style="background: white; padding: 20px; border-radius: 8px; margin-bottom: 15px; box-shadow: 0 2px 5px rgba(0,0,0,0.05);\">
                     <strong>{{ comment.author.fullname }}</strong>
-                    <p style="margin: 10px 0;">{{ comment.body }}</p>
-                    
-                    <div style="display: flex; gap: 20px; font-size: 0.9rem; color: #666;">
-                        <span style="cursor: pointer; transition: 0.3s;" onclick="toggleLike(this)">
-                            <i class="far fa-thumbs-up"></i> <span class="like-count">0</span> Likes
-                        </span>
-                        
-                        <span style="cursor: pointer;" onclick="document.getElementById('reply-{{comment.id}}').style.display='block'">
-                            <i class="far fa-comment"></i> Reply
-                        </span>
+                    <span style="font-size: 0.8rem; color: #999; margin-left: 10px;\">{{ comment.date_posted.strftime('%d %b %Y') }}</span>
+                    <p style="margin: 10px 0;\">{{ comment.body }}</p>
+                    <div style="display: flex; gap: 15px; font-size: 0.9rem; color: #666;\">
+                        <span><i class="far fa-thumbs-up"></i> Like</span>
+                        <span style="cursor: pointer;\" onclick="document.getElementById('reply-{{comment.id}}').style.display='block'\">Reply</span>
                     </div>
 
                     {% for reply in comment.replies %}
-                        <div style="margin-left: 20px; margin-top: 15px; padding-left: 10px; border-left: 2px solid #ddd; font-size: 0.95rem;">
+                        <div style="margin-left: 40px; margin-top: 15px; padding-left: 15px; border-left: 2px solid #ddd;\">
                             <strong>{{ reply.author.fullname }}</strong>
                             <p>{{ reply.body }}</p>
                         </div>
                     {% endfor %}
 
-                    <form id="reply-{{comment.id}}" method="POST" style="display:none; margin-top: 15px;">
+                    <form id="reply-{{comment.id}}" method="POST" style="display:none; margin-top: 15px;\">
                         <input type="hidden" name="parent_id" value="{{ comment.id }}">
-                        <textarea name="body" placeholder="Write a reply..." required style="width: 100%; padding: 10px; border-radius: 6px; border: 1px solid #eee;"></textarea>
-                        <button type="submit" class="btn" style="padding: 5px 15px; margin-top: 5px;">Reply</button>
+                        <textarea name="body" placeholder="Write a reply..." required style="width: 100%; padding: 10px; border-radius: 6px; border: 1px solid #eee;\"></textarea>
+                        <button type="submit" class="btn" style="padding: 5px 15px; margin-top: 5px;\">Reply</button>
                     </form>
                 </div>
             {% endfor %}
         </div>
     </section>
 </article>
-
-<script>
-function toggleLike(element) {
-    const icon = element.querySelector('i');
-    const countSpan = element.querySelector('.like-count');
-    let count = parseInt(countSpan.innerText);
-    if (icon.classList.contains('far')) {
-        icon.classList.replace('far', 'fas');
-        icon.style.color = 'var(--primary)';
-        countSpan.innerText = count + 1;
-    } else {
-        icon.classList.replace('fas', 'far');
-        icon.style.color = '#666';
-        countSpan.innerText = count - 1;
-    }
-}
-</script>
 {% endblock %}
