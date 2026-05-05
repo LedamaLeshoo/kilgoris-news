@@ -8,12 +8,12 @@ from flask_sqlalchemy import SQLAlchemy
 from flask_mail import Mail, Message
 from datetime import datetime
 from werkzeug.security import generate_password_hash, check_password_hash
-from itsdangerous import URLSafeTimedSerializer # For secure tokens
+from itsdangerous import URLSafeTimedSerializer # Added for secure reset tokens[cite: 8]
 
 app = Flask(__name__)
 app.secret_key = os.environ.get('SECRET_KEY', 'kilgoris_news_professional_2026')
 
-# Serializer for password reset links
+# Serializer for password reset links[cite: 8]
 s = URLSafeTimedSerializer(app.config['SECRET_KEY'])
 
 # --- CLOUDINARY CONFIGURATION ---
@@ -111,6 +111,7 @@ def register():
             
     return render_template('register.html')
 
+# --- NEW: FORGOT PASSWORD ROUTE[cite: 8] ---
 @app.route('/forgot_password', methods=['GET', 'POST'])
 def forgot_password():
     if request.method == 'POST':
@@ -119,7 +120,7 @@ def forgot_password():
         if user:
             token = s.dumps(email, salt='password-reset-salt')
             link = url_for('reset_password', token=token, _external=True)
-            msg = Message('Password Reset Request', sender=app.config['MAIL_USERNAME'], recipients=[email])
+            msg = Message('Password Reset Request - Kilgoris News', sender=app.config['MAIL_USERNAME'], recipients=[email])
             msg.body = f'To reset your password, visit: {link}'
             mail.send(msg)
             flash('Reset link sent to your email.', 'info')
@@ -127,6 +128,7 @@ def forgot_password():
         flash('Email not found.', 'danger')
     return render_template('forgot_password.html')
 
+# --- NEW: RESET PASSWORD ROUTE[cite: 8] ---
 @app.route('/reset_password/<token>', methods=['GET', 'POST'])
 def reset_password(token):
     try:
@@ -138,7 +140,7 @@ def reset_password(token):
         user = User.query.filter_by(email=email).first()
         user.password = generate_password_hash(request.form.get('password'))
         db.session.commit()
-        flash('Password updated!', 'success')
+        flash('Password updated! You can now login.', 'success')
         return redirect(url_for('login'))
     return render_template('reset_token.html')
 
@@ -154,6 +156,7 @@ def verify():
         flash("Invalid code", "danger")
     return render_template('verify.html')
 
+# --- UPDATED: CREATE ARTICLE ROUTE WITH VIDEO FIX[cite: 8] ---
 @app.route('/admin/post', methods=['GET', 'POST'])
 def create_article():
     if not session.get('is_admin'):
@@ -163,12 +166,33 @@ def create_article():
         file = request.files.get('file')
         file_url = 'https://via.placeholder.com/800x400'
         is_video = False
-        if file:
-            upload_result = cloudinary.uploader.upload(file, resource_type="auto", transformation=[{'width': 800, 'height': 500, 'crop': 'fill', 'gravity': 'auto'}])
-            file_url = upload_result['secure_url'] 
-            if file.filename.lower().endswith(('.mp4', '.mov')):
+        if file and file.filename != '':
+            file.seek(0) # Reset pointer to fix potential 0-byte upload[cite: 8]
+            if file.filename.lower().endswith(('.mp4', '.mov', '.avi', '.mkv')):
                 is_video = True
-        new_art = Article(title=request.form.get('title'), content=request.form.get('content'), category=request.form.get('category'), file_path=file_url, is_video=is_video)
+            
+            try:
+                # Use explicit resource_type for videos[cite: 8]
+                upload_result = cloudinary.uploader.upload(
+                    file, 
+                    resource_type="video" if is_video else "image",
+                    transformation=[
+                        {'width': 800, 'height': 500, 'crop': 'fill', 'gravity': 'auto'}
+                    ] if not is_video else [] # Skip transformations for video test[cite: 8]
+                )
+                file_url = upload_result.get('secure_url')
+            except Exception as e:
+                print(f"CLOUDINARY ERROR: {str(e)}")
+                flash(f"Upload failed: {str(e)}", "danger")
+                return redirect(url_for('create_article'))
+
+        new_art = Article(
+            title=request.form.get('title'), 
+            content=request.form.get('content'), 
+            category=request.form.get('category'), 
+            file_path=file_url, 
+            is_video=is_video
+        )
         db.session.add(new_art)
         db.session.commit()
         flash("Article Published Successfully!", "success")
