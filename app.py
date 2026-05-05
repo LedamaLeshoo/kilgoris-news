@@ -62,6 +62,7 @@ class Article(db.Model):
     file_path = db.Column(db.String(500), default='https://via.placeholder.com/800x400')
     is_video = db.Column(db.Boolean, default=False)
     category = db.Column(db.String(50))
+    views = db.Column(db.Integer, default=0) # NEW Field to monitor views/clicks
     comments = db.relationship('Comment', backref='article', lazy=True, cascade="all, delete-orphan")
 
 class Comment(db.Model):
@@ -249,6 +250,12 @@ def donate():
 @app.route('/article/<int:article_id>', methods=['GET', 'POST'])
 def article(article_id):
     art = Article.query.get_or_404(article_id)
+    
+    # Track View: Increments database counter on every GET request visit
+    if request.method == 'GET':
+        art.views = (art.views or 0) + 1
+        db.session.commit()
+
     if request.method == 'POST':
         if not session.get('user_id'): return redirect(url_for('login'))
         comment = Comment(body=request.form.get('body'), article_id=article_id, user_id=session['user_id'], parent_id=request.form.get('parent_id'))
@@ -261,7 +268,6 @@ def article(article_id):
 def ads_txt():
     return send_from_directory(os.path.dirname(os.path.abspath(__file__)), 'ads.txt')
 
-# --- NEW ROUTE FOR PRIVACY POLICY ---
 @app.route('/privacy-policy')
 def privacy_policy():
     return render_template('privacy.html')
