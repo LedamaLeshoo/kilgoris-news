@@ -197,36 +197,14 @@ def create_article():
 
 @app.route('/login', methods=['GET', 'POST'])
 def login():
-
-    # If already logged in
-    if session.get('user_id'):
-        return redirect(url_for('home'))
-
     if request.method == 'POST':
-
-        user = User.query.filter_by(
-            email=request.form.get('email')
-        ).first()
-
-        if user and check_password_hash(
-            user.password,
-            request.form.get('password')
-        ):
-
+        user = User.query.filter_by(email=request.form.get('email')).first()
+        if user and check_password_hash(user.password, request.form.get('password')):
             session['user_id'] = user.id
             session['user_name'] = user.fullname
             session['is_admin'] = user.is_admin
-
-            # Redirect back to article if user came from Read More
-            next_page = request.args.get('next')
-
-            if next_page:
-                return redirect(next_page)
-
             return redirect(url_for('home'))
-
         flash("Login failed", "danger")
-
     return render_template('login.html')
 
 @app.route('/logout')
@@ -270,33 +248,13 @@ def donate():
 
 @app.route('/article/<int:article_id>', methods=['GET', 'POST'])
 def article(article_id):
-
-    # Redirect to login if not logged in
+    # Check if user is logged in first
     if not session.get('user_id'):
-        return redirect(
-            url_for(
-                'login',
-                next=url_for('article', article_id=article_id)
-            )
-        )
-
+        flash("Please login to read the full article", "info")
+        return redirect(url_for('login'))
+        
     art = Article.query.get_or_404(article_id)
-
-    if request.method == 'POST':
-
-        comment = Comment(
-            body=request.form.get('body'),
-            article_id=article_id,
-            user_id=session['user_id'],
-            parent_id=request.form.get('parent_id')
-        )
-
-        db.session.add(comment)
-        db.session.commit()
-
-        return redirect(url_for('article', article_id=article_id))
-
-    return render_template('article.html', article=art)
+    # ... rest of your existing code ...
 
 @app.route('/ads.txt')
 def ads_txt():
