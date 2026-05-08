@@ -28,9 +28,19 @@
             </span>
             <h2 style="font-size: 1.3rem;">{{ article.title }}</h2>
             <p>{{ article.content[:100] }}...</p>
-            <a href="{{ url_for('login') }}" class="btn" style="display: inline-block; margin-top: 15px; text-decoration: none;">
-    Read More
-</a>
+            <div class="card-content">
+    <span style="color: var(--accent); font-weight: bold; text-transform: uppercase; font-size: 0.8rem;">
+        {{ article.category if article.category else 'Latest Update' }}
+    </span>
+    <h2 style="font-size: 1.3rem;">{{ article.title }}</h2>
+    <p>{{ article.content[:100] }}...</p>
+
+    {% if session.get('user_id') %}
+        <a href="{{ url_for('article', article_id=article.id) }}" class="btn" style="display: inline-block; margin-top: 15px; text-decoration: none;">Read More</a>
+    {% else %}
+        <a href="{{ url_for('login') }}" class="btn" style="display: inline-block; margin-top: 15px; text-decoration: none; background-color: var(--red);">Login to Read More</a>
+    {% endif %}
+</div>
         </div>
     </div>
     {% else %}
