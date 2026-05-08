@@ -13,9 +13,10 @@
     {% endif %}
 
     <div style="font-size: 1.1rem; line-height: 1.7; color: #333; white-space: pre-wrap; word-wrap: break-word;">
-    {{ article.content | urlize(target="_blank") }}
-</div>
+        {{ article.content }}
+    </div>
 
+    <!-- Social Share Section (Now Functional) -->
     <div style="margin-top: 40px; padding: 20px; border-top: 1px solid #eee; display: flex; flex-wrap: wrap; gap: 20px; align-items: center;">
         <strong>Share:</strong>
         <a href="https://api.whatsapp.com/send?text=Read this on Kilgoris News: {{ article.title }} - {{ request.url }}" target="_blank" style="color: #25D366; font-size: 1.5rem;"><i class="fab fa-whatsapp"></i></a>
@@ -24,6 +25,7 @@
         <button onclick="navigator.share({title: '{{ article.title }}', url: '{{ request.url }}'})" style="background: none; border: none; color: var(--primary); cursor: pointer; font-size: 1.2rem;"><i class="fas fa-share-alt"></i></button>
     </div>
 
+    <!-- Comments Section -->
     <section style="margin-top: 60px;">
         <h3>Community Discussion ({{ article.comments|length }})</h3>
         
