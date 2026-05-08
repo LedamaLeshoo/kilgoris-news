@@ -248,13 +248,19 @@ def donate():
 
 @app.route('/article/<int:article_id>', methods=['GET', 'POST'])
 def article(article_id):
-    # Check if user is logged in first
+    # SECURITY: Check if user is logged in before allowing them to see the article
     if not session.get('user_id'):
         flash("Please login to read the full article", "info")
         return redirect(url_for('login'))
         
     art = Article.query.get_or_404(article_id)
-    # ... rest of your existing code ...
+    if request.method == 'POST':
+        if not session.get('user_id'): return redirect(url_for('login'))
+        comment = Comment(body=request.form.get('body'), article_id=article_id, user_id=session['user_id'], parent_id=request.form.get('parent_id'))
+        db.session.add(comment)
+        db.session.commit()
+        return redirect(url_for('article', article_id=article_id))
+    return render_template('article.html', article=art)
 
 @app.route('/ads.txt')
 def ads_txt():
