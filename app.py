@@ -71,14 +71,12 @@ class Article(db.Model):
 class CommunityReport(db.Model):
     id = db.Column(db.Integer, primary_key=True)
     reporter_name = db.Column(db.String(100), nullable=False)
-    category = db.Column(db.String(50), nullable=False)
+    category = db.Column(db.String(50), nullable=False)  # Event, Accident, etc.
     title = db.Column(db.String(200), nullable=False)
     description = db.Column(db.Text, nullable=False)
     location = db.Column(db.String(100))
-    file_path = db.Column(db.String(500)) # Stores the Cloudinary URL
-    file_type = db.Column(db.String(50))  # 'image', 'video', or 'raw' (document)
     date_submitted = db.Column(db.DateTime, default=datetime.utcnow)
-    is_approved = db.Column(db.Boolean, default=False)
+    is_approved = db.Column(db.Boolean, default=False) # Admin can verify before showing publicly
 
 class Comment(db.Model):
     id = db.Column(db.Integer, primary_key=True)
@@ -117,49 +115,31 @@ def delete_report(report_id):
 @app.route('/community-reporter', methods=['GET', 'POST'])
 def community_reporter():
     if request.method == 'POST':
-        file = request.files.get('report_file')
-        file_url = None
-        file_type = None
-
-        if file and file.filename != '':
-            try:
-                # Detect file type for Cloudinary
-                ext = file.filename.lower().split('.')[-1]
-                if ext in ['jpg', 'jpeg', 'png', 'gif']:
-                    resource = "image"
-                elif ext in ['mp4', 'mov', 'avi']:
-                    resource = "video"
-                else:
-                    resource = "raw" # For PDF, Word, etc.
-
-                upload_result = cloudinary.uploader.upload(file, resource_type=resource)
-                file_url = upload_result.get('secure_url')
-                file_type = resource
-            except Exception as e:
-                flash("File upload failed, but you can still submit text.", "warning")
-
         try:
             new_report = CommunityReport(
                 reporter_name=request.form.get('reporter_name'),
                 category=request.form.get('category'),
                 title=request.form.get('title'),
                 description=request.form.get('description'),
-                location=request.form.get('location'),
-                file_path=file_url,
-                file_type=file_type
+                location=request.form.get('location')
             )
             db.session.add(new_report)
             db.session.commit()
-            flash("Report submitted with media! Pending admin review.", "success")
+            flash("Report submitted successfully! It will appear after review.", "success")
+            return redirect(url_for('community_reporter'))
         except Exception as e:
-            db.session.rollback()
-            flash("Error saving report.", "danger")
+            db.session.rollback() # CRITICAL: This prevents the "Server Error" from getting stuck
+            print(f"REPORT SUBMISSION ERROR: {e}")
+            flash("An error occurred while submitting your report. Please try again.", "danger")
+            return redirect(url_for('community_reporter'))
+    
+    # Only show approved reports to the public
+    try:
+        reports = CommunityReport.query.filter_by(is_approved=True).order_by(CommunityReport.date_submitted.desc()).all()
+    except Exception:
+        reports = [] # If the table doesn't exist yet, show an empty list instead of crashing
         
-        return redirect(url_for('community_reporter'))
-
-    reports = CommunityReport.query.filter_by(is_approved=True).order_by(CommunityReport.date_submitted.desc()).all()
     return render_template('community_reporter.html', reports=reports)
-
 
 @app.route('/register', methods=['GET', 'POST'])
 def register():
