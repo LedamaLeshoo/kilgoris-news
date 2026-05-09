@@ -68,6 +68,16 @@ class Article(db.Model):
     category = db.Column(db.String(50))
     comments = db.relationship('Comment', backref='article', lazy=True, cascade="all, delete-orphan")
 
+class CommunityReport(db.Model):
+    id = db.Column(db.Integer, primary_key=True)
+    reporter_name = db.Column(db.String(100), nullable=False)
+    category = db.Column(db.String(50), nullable=False)  # Event, Accident, etc.
+    title = db.Column(db.String(200), nullable=False)
+    description = db.Column(db.Text, nullable=False)
+    location = db.Column(db.String(100))
+    date_submitted = db.Column(db.DateTime, default=datetime.utcnow)
+    is_approved = db.Column(db.Boolean, default=False) # Admin can verify before showing publicly
+
 class Comment(db.Model):
     id = db.Column(db.Integer, primary_key=True)
     body = db.Column(db.Text, nullable=False)
@@ -83,6 +93,25 @@ class Comment(db.Model):
 def home():
     articles = Article.query.order_by(Article.date_posted.desc()).all()
     return render_template('index.html', articles=articles)
+
+@app.route('/community-reporter', methods=['GET', 'POST'])
+def community_reporter():
+    if request.method == 'POST':
+        new_report = CommunityReport(
+            reporter_name=request.form.get('reporter_name'),
+            category=request.form.get('category'),
+            title=request.form.get('title'),
+            description=request.form.get('description'),
+            location=request.form.get('location')
+        )
+        db.session.add(new_report)
+        db.session.commit()
+        flash("Report submitted successfully! It will appear after review.", "success")
+        return redirect(url_for('community_reporter'))
+    
+    # Only show approved reports to the public
+    reports = CommunityReport.query.filter_by(is_approved=True).order_by(CommunityReport.date_submitted.desc()).all()
+    return render_template('community_reporter.html', reports=reports)
 
 @app.route('/register', methods=['GET', 'POST'])
 def register():
