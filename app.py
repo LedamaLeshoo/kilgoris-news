@@ -211,6 +211,14 @@ def login():
         flash("Login failed", "danger")
     return render_template('login.html')
 
+@app.context_processor
+def inject_articles():
+    latest_articles = Article.query.order_by(
+        Article.date_posted.desc()
+    ).limit(5).all()
+
+    return dict(articles=latest_articles)
+
 @app.route('/logout')
 def logout():
     session.clear()
