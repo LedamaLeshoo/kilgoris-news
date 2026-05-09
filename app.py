@@ -17,21 +17,20 @@ app.secret_key = os.environ.get('SECRET_KEY', 'kilgoris_news_professional_2026')
 s = URLSafeTimedSerializer(app.config['SECRET_KEY'])
 
 # --- CLOUDINARY CONFIGURATION ---
+# Added safe fallbacks to prevent startup crashes
 cloudinary.config( 
   cloud_name = os.environ.get('CLOUDINARY_CLOUD_NAME', 'dfowijvky'), 
-  api_key = os.environ.get('CLOUDINARY_API_KEY'), 
-  api_secret = os.environ.get('CLOUDINARY_API_SECRET') 
+  api_key = os.environ.get('CLOUDINARY_API_KEY', ''), 
+  api_secret = os.environ.get('CLOUDINARY_API_SECRET', '') 
 )
 
 # --- CONFIGURATION ---
 app.config['MAX_CONTENT_LENGTH'] = 50 * 1024 * 1024
 
-# Email Config - Updated to prevent 500 errors
+# Email Config - Added fallbacks to prevent 500 errors
 app.config['MAIL_SERVER'] = 'smtp.gmail.com'
 app.config['MAIL_PORT'] = 587
 app.config['MAIL_USE_TLS'] = True
-# Adding '' as a fallback prevents the app from crashing if variables are missing
-# The , '' tells Python: "If you can't find the username, just use an empty string instead of crashing."
 app.config['MAIL_USERNAME'] = os.environ.get('MAIL_USERNAME', '')
 app.config['MAIL_PASSWORD'] = os.environ.get('MAIL_PASSWORD', '')
 mail = Mail(app)
@@ -85,7 +84,7 @@ def home():
 @app.route('/register', methods=['GET', 'POST'])
 def register():
     if request.method == 'POST':
-        email = request.form.get('email')
+        email = request.form.get('email').strip().lower()
         if User.query.filter_by(email=email).first():
             flash("Email already registered", "danger")
             return redirect(url_for('register'))
@@ -98,51 +97,48 @@ def register():
             password=hashed_pw,
             otp_code=otp
         )
-        db.session.add(new_user)
-        db.session.commit()
         
         try:
+            db.session.add(new_user)
+            db.session.commit()
+            
+            # Send Email
             msg = Message('Verify your Kilgoris News Account', sender=app.config['MAIL_USERNAME'], recipients=[email])
             msg.body = f"Your verification code is: {otp}"
             mail.send(msg)
             session['verify_email'] = email
             return redirect(url_for('verify'))
-        except:
-            flash("Account created, but email failed to send.", "warning")
-            return redirect(url_for('login'))
+        except Exception as e:
+            db.session.rollback()
+            print(f"REGISTER ERROR: {e}")
+            flash("Registration failed. Please check your internet or email settings.", "warning")
+            return redirect(url_for('register'))
             
     return render_template('register.html')
 
-@app.route('/forgot_password', methods=['GET', 'POST'])
-def forgot_password():
+@app.route('/login', methods=['GET', 'POST'])
+def login():
     if request.method == 'POST':
-        email = request.form.get('email')
+        email = request.form.get('email').strip().lower()
+        password = request.form.get('password')
+        
         user = User.query.filter_by(email=email).first()
-        if user:
-            token = s.dumps(email, salt='password-reset-salt')
-            link = url_for('reset_password', token=token, _external=True)
-            msg = Message('Password Reset Request - Kilgoris News', sender=app.config['MAIL_USERNAME'], recipients=[email])
-            msg.body = f'To reset your password, visit: {link}'
-            mail.send(msg)
-            flash('Reset link sent to your email.', 'info')
-            return redirect(url_for('login'))
-        flash('Email not found.', 'danger')
-    return render_template('forgot_password.html')
+        if user and check_password_hash(user.password, password):
+            session.clear() # Clear any old session data
+            session['user_id'] = user.id
+            session['user_name'] = user.fullname
+            session['is_admin'] = user.is_admin
+            flash(f"Welcome back, {user.fullname}!", "success")
+            return redirect(url_for('home'))
+        
+        flash("Invalid email or password", "danger")
+    return render_template('login.html')
 
-@app.route('/reset_password/<token>', methods=['GET', 'POST'])
-def reset_password(token):
-    try:
-        email = s.loads(token, salt='password-reset-salt', max_age=1800)
-    except:
-        flash('Link expired or invalid.', 'danger')
-        return redirect(url_for('forgot_password'))
-    if request.method == 'POST':
-        user = User.query.filter_by(email=email).first()
-        user.password = generate_password_hash(request.form.get('password'))
-        db.session.commit()
-        flash('Password updated! You can now login.', 'success')
-        return redirect(url_for('login'))
-    return render_template('reset_token.html')
+@app.route('/logout')
+def logout():
+    session.clear()
+    flash("Logged out successfully", "info")
+    return redirect(url_for('home'))
 
 @app.route('/verify', methods=['GET', 'POST'])
 def verify():
@@ -161,16 +157,14 @@ def create_article():
     if not session.get('is_admin'):
         flash("Unauthorized access", "danger")
         return redirect(url_for('home'))
-    
+
     if request.method == 'POST':
         file = request.files.get('file')
         file_url = 'https://via.placeholder.com/800x400'
         is_video = False
         
-        # 1. Handle File Upload
         if file and file.filename != '':
-            filename = file.filename.lower()
-            if filename.endswith(('.mp4', '.mov', '.avi', '.mkv')):
+            if file.filename.lower().endswith(('.mp4', '.mov', '.avi', '.mkv')):
                 is_video = True
             
             try:
@@ -181,9 +175,9 @@ def create_article():
                 file_url = upload_result.get('secure_url')
             except Exception as e:
                 print(f"CLOUDINARY ERROR: {str(e)}")
-                flash("Media upload failed. Using placeholder instead.", "warning")
+                flash(f"Media upload failed: {str(e)}", "danger")
+                return redirect(url_for('create_article'))
 
-        # 2. Save to Database with a Safety Net
         try:
             new_art = Article(
                 title=request.form.get('title'), 
@@ -197,45 +191,12 @@ def create_article():
             flash("Article Published Successfully!", "success")
             return redirect(url_for('home'))
         except Exception as e:
-            # This line is the most important: it resets the database connection
-            db.session.rollback() 
-            print(f"DATABASE ERROR: {str(e)}")
-            flash(f"Error saving to database: {str(e)}", "danger")
+            db.session.rollback() # Prevents the 500 error loop
+            print(f"DATABASE ERROR: {e}")
+            flash("Could not save article to database.", "danger")
             return redirect(url_for('create_article'))
-            
+
     return render_template('create_article.html')
-
-@app.route('/login', methods=['GET', 'POST'])
-def login():
-    if request.method == 'POST':
-        user = User.query.filter_by(email=request.form.get('email')).first()
-        if user and check_password_hash(user.password, request.form.get('password')):
-            session['user_id'] = user.id
-            session['user_name'] = user.fullname
-            session['is_admin'] = user.is_admin
-            return redirect(url_for('home'))
-        flash("Login failed", "danger")
-    return render_template('login.html')
-
-@app.route('/logout')
-def logout():
-    session.clear()
-    return redirect(url_for('home'))
-
-@app.route('/support')
-def support():
-    return render_template('support.html')
-
-@app.route('/search')
-def search():
-    query = request.args.get('q')
-    results = Article.query.filter((Article.title.contains(query)) | (Article.content.contains(query))).all() if query else []
-    return render_template('index.html', articles=results, category_title=f"SEARCH RESULTS FOR: {query}")
-
-@app.route('/category/<string:cat_name>')
-def category(cat_name):
-    category_articles = Article.query.filter_by(category=cat_name).order_by(Article.date_posted.desc()).all()
-    return render_template('index.html', articles=category_articles, category_title=cat_name.upper())
 
 @app.route('/admin')
 def admin_dashboard():
@@ -246,38 +207,69 @@ def admin_dashboard():
 @app.route('/admin/delete/<int:article_id>')
 def delete_article(article_id):
     if not session.get('is_admin'): return redirect(url_for('home'))
-    art = Article.query.get_or_404(article_id)
-    db.session.delete(art)
-    db.session.commit()
-    flash("Article deleted", "info")
+    try:
+        art = Article.query.get_or_404(article_id)
+        db.session.delete(art)
+        db.session.commit()
+        flash("Article deleted", "info")
+    except Exception as e:
+        db.session.rollback()
+        flash("Delete failed", "danger")
     return redirect(url_for('admin_dashboard'))
-
-@app.route('/donate')
-def donate():
-    return render_template('donate.html')
 
 @app.route('/article/<int:article_id>', methods=['GET', 'POST'])
 def article(article_id):
     art = Article.query.get_or_404(article_id)
     if request.method == 'POST':
         if not session.get('user_id'): return redirect(url_for('login'))
-        comment = Comment(body=request.form.get('body'), article_id=article_id, user_id=session['user_id'], parent_id=request.form.get('parent_id'))
-        db.session.add(comment)
-        db.session.commit()
+        try:
+            comment = Comment(
+                body=request.form.get('body'), 
+                article_id=article_id, 
+                user_id=session['user_id'], 
+                parent_id=request.form.get('parent_id')
+            )
+            db.session.add(comment)
+            db.session.commit()
+        except Exception as e:
+            db.session.rollback()
+            flash("Comment failed to post", "danger")
         return redirect(url_for('article', article_id=article_id))
     return render_template('article.html', article=art)
+
+# Helper Routes
+@app.route('/support')
+def support(): return render_template('support.html')
+
+@app.route('/donate')
+def donate(): return render_template('donate.html')
+
+@app.route('/privacy-policy')
+def privacy_policy(): return render_template('privacy.html')
 
 @app.route('/ads.txt')
 def ads_txt():
     return send_from_directory(os.path.dirname(os.path.abspath(__file__)), 'ads.txt')
 
-# --- NEW ROUTE FOR PRIVACY POLICY ---
-@app.route('/privacy-policy')
-def privacy_policy():
-    return render_template('privacy.html')
+@app.route('/category/<string:cat_name>')
+def category(cat_name):
+    category_articles = Article.query.filter_by(category=cat_name).order_by(Article.date_posted.desc()).all()
+    return render_template('index.html', articles=category_articles, category_title=cat_name.upper())
 
+@app.route('/search')
+def search():
+    query = request.args.get('q')
+    results = Article.query.filter((Article.title.contains(query)) | (Article.content.contains(query))).all() if query else []
+    return render_template('index.html', articles=results, category_title=f"SEARCH RESULTS FOR: {query}")
+
+# Startup and Auto-Admin
 with app.app_context():
     db.create_all()
+    # Promote primary user to admin automatically if they exist
+    user = User.query.filter_by(email='ledamaleshoo1@gmail.com').first()
+    if user:
+        user.is_admin = True
+        db.session.commit()
 
 if __name__ == '__main__':
     app.run(debug=False)
