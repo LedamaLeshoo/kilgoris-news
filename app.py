@@ -115,20 +115,30 @@ def delete_report(report_id):
 @app.route('/community-reporter', methods=['GET', 'POST'])
 def community_reporter():
     if request.method == 'POST':
-        new_report = CommunityReport(
-            reporter_name=request.form.get('reporter_name'),
-            category=request.form.get('category'),
-            title=request.form.get('title'),
-            description=request.form.get('description'),
-            location=request.form.get('location')
-        )
-        db.session.add(new_report)
-        db.session.commit()
-        flash("Report submitted successfully! It will appear after review.", "success")
-        return redirect(url_for('community_reporter'))
+        try:
+            new_report = CommunityReport(
+                reporter_name=request.form.get('reporter_name'),
+                category=request.form.get('category'),
+                title=request.form.get('title'),
+                description=request.form.get('description'),
+                location=request.form.get('location')
+            )
+            db.session.add(new_report)
+            db.session.commit()
+            flash("Report submitted successfully! It will appear after review.", "success")
+            return redirect(url_for('community_reporter'))
+        except Exception as e:
+            db.session.rollback() # CRITICAL: This prevents the "Server Error" from getting stuck
+            print(f"REPORT SUBMISSION ERROR: {e}")
+            flash("An error occurred while submitting your report. Please try again.", "danger")
+            return redirect(url_for('community_reporter'))
     
     # Only show approved reports to the public
-    reports = CommunityReport.query.filter_by(is_approved=True).order_by(CommunityReport.date_submitted.desc()).all()
+    try:
+        reports = CommunityReport.query.filter_by(is_approved=True).order_by(CommunityReport.date_submitted.desc()).all()
+    except Exception:
+        reports = [] # If the table doesn't exist yet, show an empty list instead of crashing
+        
     return render_template('community_reporter.html', reports=reports)
 
 @app.route('/register', methods=['GET', 'POST'])
