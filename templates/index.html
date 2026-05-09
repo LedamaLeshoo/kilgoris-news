@@ -4,12 +4,10 @@
     <h1 style="font-size: clamp(1.5rem, 8vw, 2.5rem);">Voice of Kilgoris</h1>
     <p>Independent. Verified. Local. promising to deliver</p>
 </section>
-
-<div>
-        <h3 style="margin: 0; color: var(--navy);">See something happening in Kilgoris?</h3>
-        <p style="margin: 0; font-size: 0.9rem; color: #666;">Report accidents, events, or lost items to the community.</p>
-    </div>
-    <a href="{{ url_for('community_reporter') }}" class="subscribe-btn" style="background: var(--red); text-decoration: none;">SUBMIT A REPORT</a>
+<div style="display: flex; flex-direction: column; align-items: center; text-align: center;">
+    <h3 style="margin: 0; color: var(--navy);">See something happening in Kilgoris?</h3>
+    <p style="margin: 0; font-size: 0.9rem; color: #666;">Report accidents, events, or lost items to the community.</p>
+    <a href="{{ url_for('community_reporter') }}" class="subscribe-btn" style="background: var(--red); text-decoration: none; margin-top: 16px;">SUBMIT A REPORT</a>
 </div>
         <div class="card-content">
 
