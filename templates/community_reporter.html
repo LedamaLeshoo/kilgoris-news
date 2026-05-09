@@ -1,0 +1,48 @@
+{% extends 'base.html' %}
+{% block content %}
+<div class="container" style="margin-top: 40px;">
+    <h1 style="color: var(--navy); text-align: center; font-weight: 900;">COMMUNITY REPORTER</h1>
+    <p style="text-align: center; margin-bottom: 40px;">Report events, accidents, or updates directly to the people of Kilgoris.</p>
+
+    <div style="display: grid; grid-template-columns: 1fr 350px; gap: 30px;">
+        
+        <div class="reports-feed">
+            {% for report in reports %}
+            <div style="background: white; padding: 20px; border-radius: 8px; margin-bottom: 20px; border-left: 5px solid var(--red); box-shadow: 0 2px 10px rgba(0,0,0,0.05);">
+                <span style="font-size: 0.8rem; font-weight: bold; color: var(--red); text-transform: uppercase;">{{ report.category }}</span>
+                <h3 style="margin: 5px 0;">{{ report.title }}</h3>
+                <p style="font-size: 0.95rem; color: #444;">{{ report.description }}</p>
+                <div style="margin-top: 10px; font-size: 0.8rem; color: #888;">
+                    <i class="fas fa-map-marker-alt"></i> {{ report.location }} | 
+                    <i class="fas fa-user"></i> By {{ report.reporter_name }}
+                </div>
+            </div>
+            {% else %}
+            <p>No reports yet. Be the first to update the community!</p>
+            {% endfor %}
+        </div>
+
+        <div style="background: var(--navy); color: white; padding: 25px; border-radius: 12px; height: fit-content;">
+            <h3>Submit an Update</h3>
+            <form method="POST" style="margin-top: 20px;">
+                <input type="text" name="reporter_name" placeholder="Your Name" required style="width: 100%; padding: 10px; margin-bottom: 10px; border-radius: 4px; border: none;">
+                
+                <select name="category" required style="width: 100%; padding: 10px; margin-bottom: 10px; border-radius: 4px; border: none;">
+                    <option value="" disabled selected>Select Category</option>
+                    <option value="Accident">Accident</option>
+                    <option value="Event">Community Event</option>
+                    <option value="Lost Item">Lost & Found</option>
+                    <option value="Politics">Politics Update</option>
+                    <option value="School">School Activity</option>
+                </select>
+
+                <input type="text" name="title" placeholder="Headline" required style="width: 100%; padding: 10px; margin-bottom: 10px; border-radius: 4px; border: none;">
+                <input type="text" name="location" placeholder="Exact Location (e.g., Kilgoris Market)" required style="width: 100%; padding: 10px; margin-bottom: 10px; border-radius: 4px; border: none;">
+                <textarea name="description" placeholder="Details..." rows="4" required style="width: 100%; padding: 10px; margin-bottom: 15px; border-radius: 4px; border: none; font-family: inherit;"></textarea>
+                
+                <button type="submit" class="btn" style="background: var(--red); color: white;">Submit Report</button>
+            </form>
+        </div>
+    </div>
+</div>
+{% endblock %}
