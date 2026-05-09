@@ -11,9 +11,13 @@ from werkzeug.security import generate_password_hash, check_password_hash
 from itsdangerous import URLSafeTimedSerializer
 
 app = Flask(__name__)
-app.secret_key = os.environ.get('SECRET_KEY', 'kilgoris_news_professional_2026')
+app.config['SECRET_KEY'] = os.environ.get(
+    'SECRET_KEY',
+    'kilgoris_news_professional_2026'
+)
 
-# Serializer for password reset links
+app.secret_key = app.config['SECRET_KEY']
+
 s = URLSafeTimedSerializer(app.config['SECRET_KEY'])
 
 # --- CLOUDINARY CONFIGURATION ---
