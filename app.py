@@ -298,9 +298,15 @@ def category(cat_name):
 
 @app.route('/admin')
 def admin_dashboard():
-    if not session.get('is_admin'): return redirect(url_for('login'))
+    if not session.get('is_admin'): 
+        return redirect(url_for('login'))
+    
     articles = Article.query.order_by(Article.date_posted.desc()).all()
-    return render_template('admin_dashboard.html', articles=articles)
+    
+    # NEW: Fetch reports so the HTML can see them
+    reports = CommunityReport.query.order_by(CommunityReport.date_submitted.desc()).all()
+    
+    return render_template('admin_dashboard.html', articles=articles, reports=reports)
 
 @app.route('/admin/delete/<int:article_id>')
 def delete_article(article_id):
