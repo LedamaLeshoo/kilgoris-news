@@ -16,7 +16,20 @@
     </style>
 </head>
 
-
+<body>
+    <div class="breaking-news-ticker">
+    <div class="ticker-label">BREAKING NEWS</div>
+    <div class="ticker-content">
+        <div class="ticker-text">
+            {% for article in articles[:5] %}
+                <span><i class="fas fa-bolt"></i> {{ article.title }} </span>
+            {% endfor %}
+            {% if not articles %}
+                <span>Welcome to Kilgoris News - Your source for independent, verified local journalism.</span>
+            {% endif %}
+        </div>
+    </div>
+</div>
 <header class="site-header">
     <div class="header-top container">
         <!-- Logo on the Upper Left -->
