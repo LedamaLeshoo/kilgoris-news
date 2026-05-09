@@ -26,12 +26,13 @@ cloudinary.config(
 # --- CONFIGURATION ---
 app.config['MAX_CONTENT_LENGTH'] = 50 * 1024 * 1024
 
-# Email Config
+# Email Config - Updated to prevent 500 errors
 app.config['MAIL_SERVER'] = 'smtp.gmail.com'
 app.config['MAIL_PORT'] = 587
 app.config['MAIL_USE_TLS'] = True
-app.config['MAIL_USERNAME'] = os.environ.get('MAIL_USERNAME')
-app.config['MAIL_PASSWORD'] = os.environ.get('MAIL_PASSWORD')
+# Adding '' as a fallback prevents the app from crashing if variables are missing
+app.config['MAIL_USERNAME'] = os.environ.get('MAIL_USERNAME', '') 
+app.config['MAIL_PASSWORD'] = os.environ.get('MAIL_PASSWORD', '')
 mail = Mail(app)
 
 # Database
@@ -159,22 +160,21 @@ def create_article():
     if not session.get('is_admin'):
         flash("Unauthorized access", "danger")
         return redirect(url_for('home'))
+    
     if request.method == 'POST':
         file = request.files.get('file')
         file_url = 'https://via.placeholder.com/800x400'
         is_video = False
+        
         if file and file.filename != '':
-            file.seek(0)
-            if file.filename.lower().endswith(('.mp4', '.mov', '.avi', '.mkv')):
+            filename = file.filename.lower()
+            if filename.endswith(('.mp4', '.mov', '.avi', '.mkv')):
                 is_video = True
             
             try:
                 upload_result = cloudinary.uploader.upload(
                     file, 
-                    resource_type="video" if is_video else "image",
-                    transformation=[
-                        {'width': 800, 'height': 500, 'crop': 'fill', 'gravity': 'auto'}
-                    ] if not is_video else []
+                    resource_type="video" if is_video else "image"
                 )
                 file_url = upload_result.get('secure_url')
             except Exception as e:
@@ -182,17 +182,26 @@ def create_article():
                 flash(f"Upload failed: {str(e)}", "danger")
                 return redirect(url_for('create_article'))
 
-        new_art = Article(
-            title=request.form.get('title'), 
-            content=request.form.get('content'), 
-            category=request.form.get('category'), 
-            file_path=file_url, 
-            is_video=is_video
-        )
-        db.session.add(new_art)
-        db.session.commit()
-        flash("Article Published Successfully!", "success")
-        return redirect(url_for('home'))
+        # --- THIS IS THE PART YOU WERE ASKING ABOUT ---
+        try:
+            new_art = Article(
+                title=request.form.get('title'), 
+                content=request.form.get('content'), 
+                category=request.form.get('category'), 
+                file_path=file_url, 
+                is_video=is_video
+            )
+            db.session.add(new_art)
+            db.session.commit()
+            flash("Article Published Successfully!", "success")
+            return redirect(url_for('home'))
+        except Exception as e:
+            # This clears the failed transaction so the app doesn't stay 'stuck'
+            db.session.rollback()
+            print(f"DATABASE ERROR: {str(e)}")
+            flash("An error occurred while saving the article. Please try again.", "danger")
+            return redirect(url_for('create_article'))
+            
     return render_template('create_article.html')
 
 @app.route('/login', methods=['GET', 'POST'])
