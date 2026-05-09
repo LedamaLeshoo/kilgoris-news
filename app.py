@@ -17,7 +17,7 @@ app.secret_key = os.environ.get('SECRET_KEY', 'kilgoris_news_professional_2026')
 s = URLSafeTimedSerializer(app.config['SECRET_KEY'])
 
 # --- CLOUDINARY CONFIGURATION ---
-# Added safe fallbacks to prevent startup crashes
+# Added fallbacks to prevent crashes if environment variables are missing
 cloudinary.config( 
   cloud_name = os.environ.get('CLOUDINARY_CLOUD_NAME', 'dfowijvky'), 
   api_key = os.environ.get('CLOUDINARY_API_KEY', ''), 
@@ -27,7 +27,7 @@ cloudinary.config(
 # --- CONFIGURATION ---
 app.config['MAX_CONTENT_LENGTH'] = 50 * 1024 * 1024
 
-# Email Config - Added fallbacks to prevent 500 errors
+# Email Config - Fallbacks added to prevent 500 errors during startup
 app.config['MAIL_SERVER'] = 'smtp.gmail.com'
 app.config['MAIL_PORT'] = 587
 app.config['MAIL_USE_TLS'] = True
@@ -35,7 +35,7 @@ app.config['MAIL_USERNAME'] = os.environ.get('MAIL_USERNAME', '')
 app.config['MAIL_PASSWORD'] = os.environ.get('MAIL_PASSWORD', '')
 mail = Mail(app)
 
-# Database
+# Database Setup
 database_url = os.environ.get('DATABASE_URL')
 if database_url and database_url.startswith("postgres://"):
     database_url = database_url.replace("postgres://", "postgresql://", 1)
@@ -102,7 +102,6 @@ def register():
             db.session.add(new_user)
             db.session.commit()
             
-            # Send Email
             msg = Message('Verify your Kilgoris News Account', sender=app.config['MAIL_USERNAME'], recipients=[email])
             msg.body = f"Your verification code is: {otp}"
             mail.send(msg)
@@ -111,7 +110,7 @@ def register():
         except Exception as e:
             db.session.rollback()
             print(f"REGISTER ERROR: {e}")
-            flash("Registration failed. Please check your internet or email settings.", "warning")
+            flash("Registration failed. Check email settings or internet.", "warning")
             return redirect(url_for('register'))
             
     return render_template('register.html')
@@ -124,7 +123,7 @@ def login():
         
         user = User.query.filter_by(email=email).first()
         if user and check_password_hash(user.password, password):
-            session.clear() # Clear any old session data
+            session.clear() # Clears any ghost session data
             session['user_id'] = user.id
             session['user_name'] = user.fullname
             session['is_admin'] = user.is_admin
@@ -168,10 +167,7 @@ def create_article():
                 is_video = True
             
             try:
-                upload_result = cloudinary.uploader.upload(
-                    file, 
-                    resource_type="video" if is_video else "image"
-                )
+                upload_result = cloudinary.uploader.upload(file, resource_type="video" if is_video else "image")
                 file_url = upload_result.get('secure_url')
             except Exception as e:
                 print(f"CLOUDINARY ERROR: {str(e)}")
@@ -191,9 +187,9 @@ def create_article():
             flash("Article Published Successfully!", "success")
             return redirect(url_for('home'))
         except Exception as e:
-            db.session.rollback() # Prevents the 500 error loop
+            db.session.rollback() # Crucial: Resets database state
             print(f"DATABASE ERROR: {e}")
-            flash("Could not save article to database.", "danger")
+            flash("Error saving article to database.", "danger")
             return redirect(url_for('create_article'))
 
     return render_template('create_article.html')
@@ -237,7 +233,7 @@ def article(article_id):
         return redirect(url_for('article', article_id=article_id))
     return render_template('article.html', article=art)
 
-# Helper Routes
+# Standard Navigation Routes
 @app.route('/support')
 def support(): return render_template('support.html')
 
@@ -262,7 +258,7 @@ def search():
     results = Article.query.filter((Article.title.contains(query)) | (Article.content.contains(query))).all() if query else []
     return render_template('index.html', articles=results, category_title=f"SEARCH RESULTS FOR: {query}")
 
-# Startup and Auto-Admin
+# Startup and Auto-Admin Configuration
 with app.app_context():
     db.create_all()
     # Promote primary user to admin automatically if they exist
