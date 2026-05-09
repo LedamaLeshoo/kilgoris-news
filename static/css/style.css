@@ -158,3 +158,65 @@ body {
     margin-top: 40px;
     border-top: 6px solid var(--red);
 }
+
+/* Ticker Styles */
+.breaking-news-ticker {
+    background: var(--navy);
+    color: var(--white);
+    display: flex;
+    align-items: center;
+    height: 40px;
+    overflow: hidden;
+    position: relative;
+    border-bottom: 2px solid var(--red);
+    z-index: 1000;
+}
+
+.ticker-label {
+    background: var(--red);
+    padding: 0 20px;
+    height: 100%;
+    display: flex;
+    align-items: center;
+    font-weight: 900;
+    font-size: 0.8rem;
+    white-space: nowrap;
+    position: relative;
+    z-index: 2;
+}
+
+.ticker-content {
+    flex: 1;
+    overflow: hidden;
+    display: flex;
+    align-items: center;
+}
+
+.ticker-text {
+    display: inline-block;
+    white-space: nowrap;
+    padding-left: 100%;
+    animation: ticker-scroll 25s linear infinite;
+}
+
+.ticker-text span {
+    margin-right: 50px;
+    font-weight: 500;
+    font-size: 0.95rem;
+}
+
+.ticker-text i {
+    color: #ffd700; /* Gold bolt icon */
+    margin-right: 8px;
+}
+
+/* Animation for the moving text */
+@keyframes ticker-scroll {
+    0% { transform: translate3d(0, 0, 0); }
+    100% { transform: translate3d(-100%, 0, 0); }
+}
+
+/* Pause animation on hover for readability */
+.breaking-news-ticker:hover .ticker-text {
+    animation-play-state: paused;
+}
