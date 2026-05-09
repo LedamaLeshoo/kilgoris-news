@@ -94,6 +94,24 @@ def home():
     articles = Article.query.order_by(Article.date_posted.desc()).all()
     return render_template('index.html', articles=articles)
 
+@app.route('/admin/approve-report/<int:report_id>')
+def approve_report(report_id):
+    if not session.get('is_admin'): return redirect(url_for('login'))
+    report = CommunityReport.query.get_or_404(report_id)
+    report.is_approved = True
+    db.session.commit()
+    flash("Report approved and is now live!", "success")
+    return redirect(url_for('admin_dashboard'))
+
+@app.route('/admin/delete-report/<int:report_id>')
+def delete_report(report_id):
+    if not session.get('is_admin'): return redirect(url_for('login'))
+    report = CommunityReport.query.get_or_404(report_id)
+    db.session.delete(report)
+    db.session.commit()
+    flash("Report deleted.", "info")
+    return redirect(url_for('admin_dashboard'))
+
 @app.route('/community-reporter', methods=['GET', 'POST'])
 def community_reporter():
     if request.method == 'POST':
