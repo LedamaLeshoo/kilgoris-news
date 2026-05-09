@@ -31,7 +31,8 @@ app.config['MAIL_SERVER'] = 'smtp.gmail.com'
 app.config['MAIL_PORT'] = 587
 app.config['MAIL_USE_TLS'] = True
 # Adding '' as a fallback prevents the app from crashing if variables are missing
-app.config['MAIL_USERNAME'] = os.environ.get('MAIL_USERNAME', '') 
+# The , '' tells Python: "If you can't find the username, just use an empty string instead of crashing."
+app.config['MAIL_USERNAME'] = os.environ.get('MAIL_USERNAME', '')
 app.config['MAIL_PASSWORD'] = os.environ.get('MAIL_PASSWORD', '')
 mail = Mail(app)
 
@@ -166,6 +167,7 @@ def create_article():
         file_url = 'https://via.placeholder.com/800x400'
         is_video = False
         
+        # 1. Handle File Upload
         if file and file.filename != '':
             filename = file.filename.lower()
             if filename.endswith(('.mp4', '.mov', '.avi', '.mkv')):
@@ -179,10 +181,9 @@ def create_article():
                 file_url = upload_result.get('secure_url')
             except Exception as e:
                 print(f"CLOUDINARY ERROR: {str(e)}")
-                flash(f"Upload failed: {str(e)}", "danger")
-                return redirect(url_for('create_article'))
+                flash("Media upload failed. Using placeholder instead.", "warning")
 
-        # --- THIS IS THE PART YOU WERE ASKING ABOUT ---
+        # 2. Save to Database with a Safety Net
         try:
             new_art = Article(
                 title=request.form.get('title'), 
@@ -196,10 +197,10 @@ def create_article():
             flash("Article Published Successfully!", "success")
             return redirect(url_for('home'))
         except Exception as e:
-            # This clears the failed transaction so the app doesn't stay 'stuck'
-            db.session.rollback()
+            # This line is the most important: it resets the database connection
+            db.session.rollback() 
             print(f"DATABASE ERROR: {str(e)}")
-            flash("An error occurred while saving the article. Please try again.", "danger")
+            flash(f"Error saving to database: {str(e)}", "danger")
             return redirect(url_for('create_article'))
             
     return render_template('create_article.html')
