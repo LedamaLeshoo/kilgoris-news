@@ -220,3 +220,8 @@ body {
 .breaking-news-ticker:hover .ticker-text {
     animation-play-state: paused;
 }
+
+.card {
+    display: flex;
+    flex-direction: column;
+}
