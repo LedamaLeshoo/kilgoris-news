@@ -75,6 +75,14 @@
                 <li><a href="/category/sports">SPORTS</a></li>
                 <li><a href="/category/entertainment">ENTERTAINMENT</a></li>
                 <li><a href="/support">SUPPORT</a></li>
+                <a href="{{ url_for('home') }}" class="nav-link">Home</a>
+<a href="{{ url_for('category', cat_name='politics') }}" class="nav-link">Politics</a>
+
+<a href="{{ url_for('community_reporter') }}" class="nav-link" style="color: var(--red); font-weight: bold;">
+    <i class="fas fa-bullhorn"></i> COMMUNITY REPORTER
+</a>
+
+<a href="{{ url_for('support') }}" class="nav-link">Support</a>
             </ul>
         </div>
     </nav>
