@@ -115,30 +115,57 @@ def delete_report(report_id):
 @app.route('/community-reporter', methods=['GET', 'POST'])
 def community_reporter():
     if request.method == 'POST':
+        category = request.form.get('category')
+        title = request.form.get('title')
+        location = request.form.get('location')
+        description = request.form.get('description')
+        file = request.files.get('report_file')
+        
+        file_url = None
+        is_video = False
+
+        if file and file.filename != '':
+            # Determine resource type
+            filename = file.filename.lower()
+            if filename.endswith(('.mp4', '.mov', '.avi', '.mkv')):
+                res_type = "video"
+            elif filename.endswith(('.jpg', '.jpeg', '.png', '.gif')):
+                res_type = "image"
+            else:
+                res_type = "raw" # For PDF, Doc, etc.
+
+            try:
+                # Upload to Cloudinary using your logic template
+                upload_result = cloudinary.uploader.upload(
+                    file, 
+                    resource_type=res_type
+                )
+                file_url = upload_result.get('secure_url')
+            except Exception as e:
+                print(f"CLOUDINARY ERROR: {str(e)}")
+                flash("Media upload failed, but your text report was sent.", "warning")
+
         try:
             new_report = CommunityReport(
-                reporter_name=request.form.get('reporter_name'),
-                category=request.form.get('category'),
-                title=request.form.get('title'),
-                description=request.form.get('description'),
-                location=request.form.get('location')
+                reporter_name="Citizen", # MUST be included to avoid DB error
+                category=category,
+                title=title,
+                location=location,
+                description=description,
+                file_path=file_url
             )
             db.session.add(new_report)
             db.session.commit()
-            flash("Report submitted successfully! It will appear after review.", "success")
-            return redirect(url_for('community_reporter'))
+            flash("Report submitted for admin review!", "success")
         except Exception as e:
-            db.session.rollback() # CRITICAL: This prevents the "Server Error" from getting stuck
-            print(f"REPORT SUBMISSION ERROR: {e}")
-            flash("An error occurred while submitting your report. Please try again.", "danger")
-            return redirect(url_for('community_reporter'))
-    
-    # Only show approved reports to the public
-    try:
-        reports = CommunityReport.query.filter_by(is_approved=True).order_by(CommunityReport.date_submitted.desc()).all()
-    except Exception:
-        reports = [] # If the table doesn't exist yet, show an empty list instead of crashing
-        
+            db.session.rollback()
+            print(f"DATABASE ERROR: {str(e)}")
+            flash("Internal Server Error: Database mismatch.", "danger")
+            
+        return redirect(url_for('community_reporter'))
+
+    # Load approved reports for the feed
+    reports = CommunityReport.query.filter_by(is_approved=True).order_of(CommunityReport.date_submitted.desc()).all()
     return render_template('community_reporter.html', reports=reports)
 
 @app.route('/register', methods=['GET', 'POST'])
