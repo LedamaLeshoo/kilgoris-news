@@ -70,13 +70,14 @@ class Article(db.Model):
 
 class CommunityReport(db.Model):
     id = db.Column(db.Integer, primary_key=True)
-    reporter_name = db.Column(db.String(100), nullable=False)
-    category = db.Column(db.String(50), nullable=False)  # Event, Accident, etc.
-    title = db.Column(db.String(200), nullable=False)
+    reporter_name = db.Column(db.String(100), nullable=False) # Ensure this exists
+    category = db.Column(db.String(50), nullable=False)
+    title = db.Column(db.String(100), nullable=False)
+    location = db.Column(db.String(100), nullable=False)
     description = db.Column(db.Text, nullable=False)
-    location = db.Column(db.String(100))
-    date_submitted = db.Column(db.DateTime, default=datetime.utcnow)
-    is_approved = db.Column(db.Boolean, default=False) # Admin can verify before showing publicly
+    file_path = db.Column(db.String(300), nullable=True) # The new column
+    is_approved = db.Column(db.Boolean, default=False)
+    date_submitted = db.Column(db.DateTime, default=datetime.utcnow) # Admin can verify before showing publicly
 
 class Comment(db.Model):
     id = db.Column(db.Integer, primary_key=True)
