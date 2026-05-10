@@ -7,35 +7,25 @@
     <div style="display: grid; grid-template-columns: 1fr 350px; gap: 30px;">
         
         <div class="reports-feed">
-    {% for report in reports %}
-    <div class="report-card">
-        {% if report.file_path %}
-            <div style="margin-top: 10px;">
-                {% if '.mp4' in report.file_path or '.mov' in report.file_path %}
-                    <video controls style="width: 100%; border-radius: 4px;"><source src="{{ report.file_path }}"></video>
-                {% elif '.jpg' in report.file_path or '.png' in report.file_path or '.jpeg' in report.file_path %}
-                    <img src="{{ report.file_path }}" style="width: 100%; border-radius: 4px;">
-                {% else %}
-                    <a href="{{ report.file_path }}" target="_blank" class="btn" style="font-size: 0.8rem; background: #555;">View Attached Document</a>
-                {% endif %}
+            {% for report in reports %}
+            <div style="background: white; padding: 20px; border-radius: 8px; margin-bottom: 20px; border-left: 5px solid var(--red); box-shadow: 0 2px 10px rgba(0,0,0,0.05);">
+                <span style="font-size: 0.8rem; font-weight: bold; color: var(--red); text-transform: uppercase;">{{ report.category }}</span>
+                <h3 style="margin: 5px 0;">{{ report.title }}</h3>
+                <p style="font-size: 0.95rem; color: #444;">{{ report.description }}</p>
+                <div style="margin-top: 10px; font-size: 0.8rem; color: #888;">
+                    <i class="fas fa-map-marker-alt"></i> {{ report.location }} | 
+                    <i class="fas fa-user"></i> By {{ report.reporter_name }}
+                </div>
             </div>
-        {% endif %}
-    </div>
-    {% endfor %}
-</div>
+            {% else %}
+            <p>No reports yet. Be the first to update the community!</p>
+            {% endfor %}
+        </div>
 
         <div style="background: var(--navy); color: white; padding: 25px; border-radius: 12px; height: fit-content;">
             <h3>Submit an Update</h3>
             <form method="POST" style="margin-top: 20px;">
                 <input type="text" name="reporter_name" placeholder="Your Name" required style="width: 100%; padding: 10px; margin-bottom: 10px; border-radius: 4px; border: none;">
-                
-<form action="{{ url_for('community_reporter') }}" method="POST" enctype="multipart/form-data">
-    
-    <label style="color: white; font-weight: bold; display: block; margin-bottom: 5px;">Upload Proof (Image, Video, or Doc)</label>
-    <input type="file" name="report_file" accept="image/*,video/*,.pdf,.doc,.docx" style="width: 100%; padding: 10px; margin-bottom: 15px; background: white; border-radius: 4px; color: black;">
-
-    <button type="submit" class="btn" style="background: var(--red); width: 100%;">SUBMIT REPORT</button>
-</form>
                 
                 <select name="category" required style="width: 100%; padding: 10px; margin-bottom: 10px; border-radius: 4px; border: none;">
                     <option value="" disabled selected>Select Category</option>
