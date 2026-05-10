@@ -1,83 +1,49 @@
 {% extends "base.html" %}
 {% block content %}
 <div class="container" style="margin-top: 40px; margin-bottom: 40px;">
+
+    <!-- Header Row -->
     <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 20px;">
         <h2 style="color: var(--navy); font-weight: 800; text-transform: uppercase;">News Management</h2>
-
-<h2 style="color: var(--navy); font-weight: 800; text-transform: uppercase; margin-top: 50px;">Community Reports</h2>
-<div style="overflow-x: auto; margin-top: 20px;">
-    <table style="width: 100%; border-collapse: collapse; background: white; box-shadow: 0 4px 15px rgba(0,0,0,0.1); border-radius: 8px;">
-        <thead style="background: #444; color: white;">
-            <tr>
-                <th style="padding: 15px; text-align: left;">Reporter</th>
-                <th style="padding: 15px; text-align: left;">Category</th>
-                <th style="padding: 15px; text-align: left;">Title</th>
-                <th style="padding: 15px; text-align: center;">Status</th>
-                <th style="padding: 15px; text-align: center;">Actions</th>
-            </tr>
-        </thead>
-        <tbody>
-            {% for report in reports %}
-            <tr style="border-bottom: 1px solid #eee;">
-                <td style="padding: 15px;">{{ report.reporter_name }}</td>
-                <td style="padding: 15px; font-weight: bold; color: var(--red);">{{ report.category }}</td>
-                <td style="padding: 15px;">{{ report.title }}</td>
-                <td style="padding: 15px; text-align: center;">
-                    {% if report.is_approved %}
-                        <span style="color: green;">✅ Live</span>
-                    {% else %}
-                        <span style="color: orange;">⏳ Pending</span>
-                    {% endif %}
-                </td>
-                <td style="padding: 15px; text-align: center;">
-                    {% if not report.is_approved %}
-                        <a href="{{ url_for('approve_report', report_id=report.id) }}" style="color: green; font-weight: bold; margin-right: 10px;">APPROVE</a>
-                    {% endif %}
-                    <a href="{{ url_for('delete_report', report_id=report.id) }}" style="color: var(--red); font-weight: bold;" onclick="return confirm('Delete this report?')">DELETE</a>
-                </td>
-            </tr>
-            {% else %}
-            <tr><td colspan="5" style="padding: 20px; text-align: center;">No community reports submitted.</td></tr>
-            {% endfor %}
-        </tbody>
-    </table>
-</div>
-
-        <!-- This button takes you to the page with the dropdown -->
         <a href="/admin/post" class="subscribe-btn" style="text-decoration: none; background-color: var(--red); color: white; padding: 10px 20px; border-radius: 4px;">+ ADD NEW STORY</a>
     </div>
 
+    <!-- Articles Table -->
     <div style="overflow-x: auto;">
         <table style="width: 100%; border-collapse: collapse; background: white; box-shadow: 0 4px 15px rgba(0,0,0,0.1); border-radius: 8px;">
-           
+            <thead style="background: var(--navy); color: white;">
+                <tr>
+                    <th style="padding: 15px; text-align: left;">Title</th>
+                    <th style="padding: 15px; text-align: left;">Category</th>
+                    <th style="padding: 15px; text-align: left;">Date</th>
+                    <th style="padding: 15px; text-align: center;">Actions</th>
+                </tr>
+            </thead>
             <tbody>
                 {% for article in articles %}
                 <tr style="border-bottom: 1px solid #eee;">
                     <td style="padding: 15px; font-weight: 600;">{{ article.title }}</td>
-                    <!-- Removed .name because category is likely a simple text string -->
-                    <td style="padding: 15px; text-transform: uppercase; color: var(--red); font-weight: bold;">
-                        {{ article.category }}
-                    </td>
+                    <td style="padding: 15px; text-transform: uppercase; color: var(--red); font-weight: bold;">{{ article.category }}</td>
                     <td style="padding: 15px;">{{ article.date_posted.strftime('%Y-%m-%d') }}</td>
                     <td style="padding: 15px; text-align: center;">
-                        <a href="/admin/delete/{{ article.id }}" 
-                           style="color: var(--red); font-weight: bold; text-decoration: none;" 
+                        <a href="/admin/delete/{{ article.id }}"
+                           style="color: var(--red); font-weight: bold; text-decoration: none;"
                            onclick="return confirm('Delete this article?')">DELETE</a>
                     </td>
                 </tr>
                 {% else %}
                 <tr>
-                    <td colspan="4" style="padding: 30px; text-align: center; color: #777;">No stories found. Click "Add New Story" to begin.</td>
+                    <td colspan="4" style="padding: 30px; text-align: center; color: #777;">No stories found. Click "+ ADD NEW STORY" to begin.</td>
                 </tr>
                 {% endfor %}
             </tbody>
         </table>
     </div>
-</div>
 
-<div style="margin-top: 50px;">
+    <!-- Community Reports Section -->
+    <div style="margin-top: 50px;">
         <h2 style="color: var(--navy); font-weight: 800; text-transform: uppercase; margin-bottom: 20px;">Community Reports</h2>
-        
+
         <div style="overflow-x: auto;">
             <table style="width: 100%; border-collapse: collapse; background: white; box-shadow: 0 4px 15px rgba(0,0,0,0.1); border-radius: 8px;">
                 <thead style="background: #444; color: white;">
@@ -119,4 +85,5 @@
         </div>
     </div>
 
+</div>
 {% endblock %}
