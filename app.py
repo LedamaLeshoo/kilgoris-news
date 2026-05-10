@@ -75,7 +75,6 @@ class CommunityReport(db.Model):
     title = db.Column(db.String(200), nullable=False)
     description = db.Column(db.Text, nullable=False)
     location = db.Column(db.String(100))
-    file_path = db.Column(db.String(300), nullable=True)
     date_submitted = db.Column(db.DateTime, default=datetime.utcnow)
     is_approved = db.Column(db.Boolean, default=False) # Admin can verify before showing publicly
 
@@ -113,36 +112,33 @@ def delete_report(report_id):
     flash("Report deleted.", "info")
     return redirect(url_for('admin_dashboard'))
 
-# Updated route in app.py
 @app.route('/community-reporter', methods=['GET', 'POST'])
 def community_reporter():
     if request.method == 'POST':
-        category = request.form.get('category')
-        title = request.form.get('title')
-        location = request.form.get('location')
-        description = request.form.get('description')
-        file = request.files.get('report_file')
+        try:
+            new_report = CommunityReport(
+                reporter_name=request.form.get('reporter_name'),
+                category=request.form.get('category'),
+                title=request.form.get('title'),
+                description=request.form.get('description'),
+                location=request.form.get('location')
+            )
+            db.session.add(new_report)
+            db.session.commit()
+            flash("Report submitted successfully! It will appear after review.", "success")
+            return redirect(url_for('community_reporter'))
+        except Exception as e:
+            db.session.rollback() # CRITICAL: This prevents the "Server Error" from getting stuck
+            print(f"REPORT SUBMISSION ERROR: {e}")
+            flash("An error occurred while submitting your report. Please try again.", "danger")
+            return redirect(url_for('community_reporter'))
+    
+    # Only show approved reports to the public
+    try:
+        reports = CommunityReport.query.filter_by(is_approved=True).order_by(CommunityReport.date_submitted.desc()).all()
+    except Exception:
+        reports = [] # If the table doesn't exist yet, show an empty list instead of crashing
         
-        file_url = None
-        if file:
-            # resource_type="auto" handles images/videos, "raw" handles documents
-            upload_result = cloudinary.uploader.upload(file, resource_type="auto")
-            file_url = upload_result.get('secure_url')
-
-        new_report = CommunityReport(
-            reporter_name="Citizen Reporter", # This satisfies the database requirement
-            category=category,
-            title=title,
-            location=location,
-            description=description,
-            file_path=file_url
-        )
-        db.session.add(new_report)
-        db.session.commit()
-        flash("Report submitted for review!", "success")
-        return redirect(url_for('community_reporter'))
-
-    reports = CommunityReport.query.filter_by(is_approved=True).order_by(CommunityReport.date_submitted.desc()).all()
     return render_template('community_reporter.html', reports=reports)
 
 @app.route('/register', methods=['GET', 'POST'])
