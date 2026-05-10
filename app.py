@@ -113,6 +113,7 @@ def delete_report(report_id):
     flash("Report deleted.", "info")
     return redirect(url_for('admin_dashboard'))
 
+# Updated route in app.py
 @app.route('/community-reporter', methods=['GET', 'POST'])
 def community_reporter():
     if request.method == 'POST':
@@ -123,18 +124,13 @@ def community_reporter():
         file = request.files.get('report_file')
         
         file_url = None
-
         if file:
-            # Check if it's an image or video for Cloudinary
-            if file.content_type.startswith('image') or file.content_type.startswith('video'):
-                upload_result = cloudinary.uploader.upload(file, resource_type="auto")
-                file_url = upload_result.get('secure_url')
-            else:
-                # For documents, save locally or upload as 'raw' to Cloudinary
-                upload_result = cloudinary.uploader.upload(file, resource_type="raw")
-                file_url = upload_result.get('secure_url')
+            # resource_type="auto" handles images/videos, "raw" handles documents
+            upload_result = cloudinary.uploader.upload(file, resource_type="auto")
+            file_url = upload_result.get('secure_url')
 
         new_report = CommunityReport(
+            reporter_name="Anonymous", # Added this to prevent the "Missing Field" error
             category=category,
             title=title,
             location=location,
