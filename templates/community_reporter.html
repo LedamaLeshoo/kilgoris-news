@@ -39,15 +39,15 @@
                 <input type="text" name="title" placeholder="Headline" required style="width: 100%; padding: 10px; margin-bottom: 10px; border-radius: 4px; border: none;">
                 <input type="text" name="location" placeholder="Exact Location (e.g., Kilgoris Market)" required style="width: 100%; padding: 10px; margin-bottom: 10px; border-radius: 4px; border: none;">
                 <textarea name="description" placeholder="Details..." rows="4" required style="width: 100%; padding: 10px; margin-bottom: 15px; border-radius: 4px; border: none; font-family: inherit;"></textarea>
-                
-                <button type="submit" class="btn" style="background: var(--red); color: white;">Submit Report</button>
-            </form>
-           <form action="{{ url_for('community_reporter') }}" method="POST" enctype="multipart/form-data">
-    
-    <label style="color: white; font-weight: bold; display: block; margin-bottom: 5px;">Upload Proof (Image, Video, or Doc)</label>
-    <input type="file" name="report_file" accept="image/*,video/*,.pdf,.doc,.docx" style="width: 100%; padding: 10px; margin-bottom: 15px; background: white; border-radius: 4px; color: black;">
+                           
+                <form action="{{ url_for('community_reporter') }}" method="POST" enctype="multipart/form-data">
 
+                <label style="color: white; font-weight: bold; display: block; margin-bottom: 5px;">Upload Proof (Image, Video, or Doc)</label>
+    
+    
+                <input type="file" name="report_file" accept="image/*,video/*,.pdf,.doc,.docx" style="width: 100%; padding: 10px; margin-bottom: 15px; background: white; border-radius: 4px; color: black;">
     <button type="submit" class="btn" style="background: var(--red); width: 100%;">SUBMIT REPORT</button>
+            </form>
 </form>
         </div>
     </div>
