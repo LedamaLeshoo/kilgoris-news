@@ -370,6 +370,7 @@ def privacy_policy():
     return render_template('privacy.html')
 
 with app.app_context():
+    db.drop_all()  # WARNING: This will delete all existing data. Use with caution.
     db.create_all()
 
 if __name__ == '__main__':
