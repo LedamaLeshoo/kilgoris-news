@@ -130,7 +130,7 @@ def community_reporter():
             file_url = upload_result.get('secure_url')
 
         new_report = CommunityReport(
-            reporter_name="Anonymous", # Added this to prevent the "Missing Field" error
+            reporter_name="Citizen Reporter", # This satisfies the database requirement
             category=category,
             title=title,
             location=location,
