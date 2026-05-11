@@ -1,12 +1,10 @@
 {% extends 'base.html' %}
 {% block content %}
 <div class="container" style="margin-top: 40px;">
-    <meta name="viewport" content="width=device-width, initial-scale=1.0">
 
     <h1 style="color: var(--navy); text-align: center; font-weight: 900;">COMMUNITY REPORTER</h1>
     <p style="text-align: center; margin-bottom: 40px;">Report events, accidents, or updates directly to the people of Kilgoris.</p>
-    <div style="display: grid; grid-template-columns: 1fr 350px; gap: 30px;">
-        
+<div class="community-layout">        
         <div class="reports-feed">
             {% for report in reports %}
             <div style="background: white; padding: 20px; border-radius: 8px; margin-bottom: 20px; border-left: 5px solid var(--red); box-shadow: 0 2px 10px rgba(0,0,0,0.05);">
@@ -93,4 +91,47 @@
         </div>
     </div>
 </div>
+
+<style>
+.community-layout{
+    display:grid;
+    grid-template-columns: 1fr 350px;
+    gap:30px;
+}
+
+@media (max-width: 768px){
+
+    .community-layout{
+        grid-template-columns: 1fr;
+    }
+
+    .reports-feed{
+        width:100%;
+    }
+
+    input,
+    textarea,
+    select,
+    button{
+        width:100% !important;
+        box-sizing:border-box;
+    }
+
+    video,
+    img{
+        max-width:100%;
+        height:auto;
+    }
+
+    .container{
+        width:95% !important;
+        overflow-x:hidden;
+    }
+
+    body{
+        overflow-x:hidden;
+    }
+}
+</style>
+
 {% endblock %}
