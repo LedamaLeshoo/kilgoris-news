@@ -79,6 +79,17 @@ class CommunityReport(db.Model):
     is_approved = db.Column(db.Boolean, default=False)
     date_submitted = db.Column(db.DateTime, default=datetime.utcnow) # Admin can verify before showing publicly
 
+    class Notification(db.Model):
+    id = db.Column(db.Integer, primary_key=True)
+    user_id = db.Column(db.Integer, db.ForeignKey('user.id'), nullable=False)
+    message = db.Column(db.String(255), nullable=False)
+    link = db.Column(db.String(255))  # Optional: URL to redirect the user
+    is_read = db.Column(db.Boolean, default=False)
+    timestamp = db.Column(db.DateTime, default=datetime.utcnow)
+
+    # Relationship to user
+    user = db.relationship('User', backref=db.backref('notifications', lazy=True))
+
 class Comment(db.Model):
     id = db.Column(db.Integer, primary_key=True)
     body = db.Column(db.Text, nullable=False)
@@ -95,11 +106,57 @@ def home():
     articles = Article.query.order_by(Article.date_posted.desc()).all()
     return render_template('index.html', articles=articles)
 
+@app.context_processor
+def inject_notifications():
+    if 'user_id' in session:
+        unread_count = Notification.query.filter_by(
+            user_id=session['user_id'], 
+            is_read=False
+        ).count()
+        return dict(unread_count=unread_count)
+    return dict(unread_count=0)
+
+@app.route('/notifications')
+def notifications():
+    if not session.get('user_id'):
+        return redirect(url_for('login'))
+    
+    user_notifications = Notification.query.filter_by(user_id=session['user_id']).order_by(Notification.timestamp.desc()).all()
+    
+    # Mark all as read when they view the page
+    unread = Notification.query.filter_by(user_id=session['user_id'], is_read=False).all()
+    for n in unread:
+        n.is_read = True
+    db.session.commit()
+    
+    return render_template('notifications.html', user_notifications=user_notifications)
+
 @app.route('/admin/approve-report/<int:report_id>')
 def approve_report(report_id):
-    if not session.get('is_admin'): return redirect(url_for('login'))
+    if not session.get('is_admin'): 
+        return redirect(url_for('login'))
+    
     report = CommunityReport.query.get_or_404(report_id)
     report.is_approved = True
+    
+    # --- NEW: NOTIFICATION LOGIC ---
+    # Try to find a registered user whose name matches the report
+    user = User.query.filter_by(fullname=report.reporter_name).first()
+    
+    if user:
+        try:
+            new_notif = Notification(
+                user_id=user.id,
+                message=f"Your report '{report.title}' has been approved and is now live!",
+                link=url_for('community_reporter'),
+                is_read=False
+            )
+            db.session.add(new_notif)
+        except Exception as e:
+            print(f"Notification error: {e}") 
+            # We don't flash an error here so the approval still finishes
+    # -------------------------------
+
     db.session.commit()
     flash("Report approved and is now live!", "success")
     return redirect(url_for('admin_dashboard'))
