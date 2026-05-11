@@ -9,7 +9,7 @@
     <link rel="stylesheet" href="{{ url_for('static', filename='css/style.css') }}">
     <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.0.0/css/all.min.css">
     <!-- ADDED FOR MOBILE RESPONSIVENESS -->
-   <style>
+    <style>
     img, video {
         max-width: 100%;
         height: auto;
@@ -24,135 +24,75 @@
 
 <body>
     <div class="breaking-news-ticker">
-    <div class="ticker-label">BREAKING NEWS</div>
-    <div class="ticker-content">
-        <div class="ticker-text">
-            {% for article in articles[:5] %}
-                <span><i class="fas fa-bolt"></i> {{ article.title }} </span>
-            {% endfor %}
-            {% if not articles %}
-                <span>Welcome to Kilgoris News - Your source for independent, verified local journalism.</span>
-            {% endif %}
+        <div class="ticker-label">BREAKING NEWS</div>
+        <div class="ticker-content">
+            <div class="ticker-text">
+                {% for article in articles %}
+                    <span>{{ article.title }} • </span>
+                {% endfor %}
+            </div>
         </div>
     </div>
-</div>
-<header class="site-header">
-    <div class="header-top container">
-        <!-- Logo on the Upper Left -->
-        <div class="header-left">
-            <a href="/" class="brand-link">
-                <img src="{{ url_for('static', filename='img/logo.png') }}" alt="Kilgoris News" class="main-logo">
-            </a>
+
+    <header class="site-header">
+        <div class="container header-top">
+            <div class="logo">
+                <a href="{{ url_for('home') }}" style="text-decoration: none;">
+                    <h1 style="color: var(--navy); font-weight: 900; margin: 0;">KILGORIS<span style="color: var(--red);">NEWS</span></h1>
+                </a>
+            </div>
+
+            <div class="search-bar">
+                <form action="{{ url_for('home') }}" method="GET" style="display: flex; width: 100%;">
+                    <input type="text" name="search" placeholder="Search news..." value="{{ request.args.get('search', '') }}">
+                    <button type="submit"><i class="fas fa-search"></i></button>
+                </form>
+            </div>
+
+            <div class="user-actions">
+                {% if session.get('user_id') %}
+                    <div class="notification-wrapper">
+                        <a href="{{ url_for('notifications') }}">
+                            <i class="fas fa-bell"></i>
+                            {% if unread_count > 0 %}
+                                <span class="notif-badge">{{ unread_count }}</span>
+                            {% endif %}
+                        </a>
+                    </div>
+                    <span class="user-name">{{ session.get('user_name') }}</span>
+                    <a href="{{ url_for('logout') }}" class="auth-link">Logout</a>
+                {% else %}
+                    <a href="{{ url_for('login') }}" class="auth-link">Login</a>
+                    <a href="{{ url_for('register') }}" class="subscribe-btn">Subscribe</a>
+                {% endif %}
+            </div>
         </div>
-        
-        <!-- Large, Centered Search Box -->
-        <div class="header-center">
-            <form action="/search" method="GET" class="search-form">
-                <input type="text" name="q" placeholder="Search news, topics, and more..." class="search-input">
-                <button type="submit" class="search-submit"><i class="fas fa-search"></i></button>
-            </form>
-        </div>
 
-        <!-- Auth & Action Buttons -->
-        <div class="header-right">
+        <nav class="main-nav">
+            <div class="container">
+                <ul>
+                    <li><a href="{{ url_for('home') }}">Home</a></li>
+                    <li><a href="{{ url_for('home', category='politics') }}">Politics</a></li>
+                    <li><a href="{{ url_for('home', category='business') }}">Business</a></li>
+                    <li><a href="{{ url_for('home', category='sports') }}">Sports</a></li>
+                    <li><a href="{{ url_for('community_reporter') }}">Community Reporter</a></li>
+                    {% if session.get('is_admin') %}
+                        <li><a href="{{ url_for('admin_dashboard') }}" style="color: var(--red);">Admin</a></li>
+                    {% endif %}
+                </ul>
+            </div>
+        </nav>
+    </header>
 
-    {% if session.get('user_id') %}
-    <div style="position: relative;">
-        <a href="{{ url_for('notifications') }}" style="color: var(--navy); text-decoration: none;">
-            <i class="fas fa-bell" style="font-size: 1.3rem;"></i>
-
-            {% if unread_count > 0 %}
-            <span style="
-                position: absolute;
-                top: -8px;
-                right: -10px;
-                background: red;
-                color: white;
-                border-radius: 50%;
-                padding: 2px 6px;
-                font-size: 0.7rem;
-                font-weight: bold;">
-                {{ unread_count }}
-            </span>
-            {% endif %}
-        </a>
-    </div>
-    {% endif %}
-
-    <a href="/donate" class="donate-btn">DONATE</a>
-
-    {% if not session.get('user_id') %}
-        <a href="/login" class="login-link">LOGIN</a>
-        <a href="/register" class="subscribe-btn">REGISTER</a>
-    {% else %}
-        <span>Welcome, {{ session.get('user_name') }}</span>
-        <a href="/logout" class="login-link">LOGOUT</a>
-
-        {% if session.get('is_admin') %}
-            <a href="/admin" class="subscribe-btn">ADMIN</a>
-        {% endif %}
-    {% endif %}
-</div>
-    
-    <!-- Red Category Nav (Tuko Style) -->
-    <nav class="category-nav">
-        <div class="container">
-            <ul class="nav-menu">
-                <li><a href="/">HOME</a></li>
-                <li><a href="/category/politics">POLITICS</a></li>
-                <li><a href="/category/business">BUSINESS</a></li>
-                <li><a href="/category/counties">COUNTIES</a></li>
-                <li><a href="/category/world">WORLD</a></li>
-                <li><a href="/category/health">HEALTH</a></li>
-                <li><a href="/category/sports">SPORTS</a></li>
-                <li><a href="/category/entertainment">ENTERTAINMENT</a></li>
-                <li><a href="/support">SUPPORT</a></li>
-<li><a href="{{ url_for('community_reporter') }}" class="nav-link" style="color: var(--red); font-weight: bold;">
-    <i class="fas fa-bullhorn"></i> COMMUNITY REPORTER</a></li>
-            </ul>
-        </div>
-    </nav>
-</header>
-
- <nav class="navbar">
-        <!-- Your Navbar Code -->
-    </nav>
-
-    <main class="container">
-        {% block content %}
-        <!-- Content goes here -->
-        {% endblock %}
+    <main class="container" style="min-height: 80vh; padding-top: 20px;">
+        {% block content %}{% endblock %}
     </main>
 
-<!-- Minimal Footer (Removing the huge green block) -->
-<footer class="minimal-footer">
-    <div class="container">
-        <p>&copy; 2026 KILGORIS NEWS. Informing. Connecting. Empowering.</p>
-        <p>By ledama leshoo</p>
-        <div style="margin-top: 10px;">
-            <a href="{{ url_for('privacy_policy') }}" style="color: #ffffff; text-decoration: none; font-size: 0.9rem; opacity: 0.8; transition: opacity 0.3s;" onmouseover="this.style.opacity=1" onmouseout="this.style.opacity=0.8">Privacy Policy</a>
+    <footer class="minimal-footer">
+        <div class="container">
+            <p>&copy; 2026 KILGORIS NEWS. Informing. Connecting. Empowering.</p>
+            <p>Developed by Ledama Samwel Leshoo</p>
         </div>
-    </div>
-</footer>
-  
-    <script>
-    document.addEventListener("DOMContentLoaded", function() {
-        const observer = new IntersectionObserver((entries) => {
-            entries.forEach(entry => {
-                if (entry.isIntersecting) {
-                    entry.target.style.opacity = 1;
-                    entry.target.style.transform = "translateY(0)";
-                }
-            });
-        });
-
-        document.querySelectorAll('.card').forEach(card => {
-            card.style.opacity = 0;
-            card.style.transform = "translateY(30px)";
-            card.style.transition = "all 0.6s ease-out";
-            observer.observe(card);
-        });
-    });
-</script>
+    </footer>
 </body>
 </html>
