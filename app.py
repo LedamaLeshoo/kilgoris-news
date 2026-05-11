@@ -20,7 +20,6 @@ app.config['SECRET_KEY'] = os.environ.get(
 
 app.secret_key = app.config['SECRET_KEY']
 
-
 oauth = OAuth(app)
 
 google = oauth.register(
