@@ -18,6 +18,9 @@ app.config['SECRET_KEY'] = os.environ.get(
     'kilgoris_news_professional_2026'
 )
 
+app.secret_key = app.config['SECRET_KEY']
+
+
 oauth = OAuth(app)
 
 google = oauth.register(
@@ -29,9 +32,6 @@ google = oauth.register(
         'scope': 'openid email profile'
     }
 )
-
-
-app.secret_key = app.config['SECRET_KEY']
 
 s = URLSafeTimedSerializer(app.config['SECRET_KEY'])
 
