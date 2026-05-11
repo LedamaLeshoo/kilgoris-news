@@ -70,24 +70,24 @@ class Article(db.Model):
 
 class CommunityReport(db.Model):
     id = db.Column(db.Integer, primary_key=True)
-    reporter_name = db.Column(db.String(100), nullable=False) # Ensure this exists
+    reporter_name = db.Column(db.String(100), nullable=False)
     category = db.Column(db.String(50), nullable=False)
     title = db.Column(db.String(100), nullable=False)
     location = db.Column(db.String(100), nullable=False)
     description = db.Column(db.Text, nullable=False)
-    file_path = db.Column(db.String(300), nullable=True) # The new column
+    file_path = db.Column(db.String(300), nullable=True)
     is_approved = db.Column(db.Boolean, default=False)
-    date_submitted = db.Column(db.DateTime, default=datetime.utcnow) # Admin can verify before showing publicly
+    date_submitted = db.Column(db.DateTime, default=datetime.utcnow)
 
-    class Notification(db.Model):
+
+class Notification(db.Model):
     id = db.Column(db.Integer, primary_key=True)
     user_id = db.Column(db.Integer, db.ForeignKey('user.id'), nullable=False)
     message = db.Column(db.String(255), nullable=False)
-    link = db.Column(db.String(255))  # Optional: URL to redirect the user
+    link = db.Column(db.String(255))
     is_read = db.Column(db.Boolean, default=False)
     timestamp = db.Column(db.DateTime, default=datetime.utcnow)
 
-    # Relationship to user
     user = db.relationship('User', backref=db.backref('notifications', lazy=True))
 
 class Comment(db.Model):
