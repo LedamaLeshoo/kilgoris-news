@@ -5,3 +5,4 @@ gunicorn
 werkzeug
 flask-mail
 cloudinary
+Authlib

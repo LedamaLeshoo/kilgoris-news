@@ -9,6 +9,19 @@ from flask_mail import Mail, Message
 from datetime import datetime
 from werkzeug.security import generate_password_hash, check_password_hash
 from itsdangerous import URLSafeTimedSerializer
+from authlib.integrations.flask_client import OAuth
+
+oauth = OAuth(app)
+
+google = oauth.register(
+    name='google',
+    client_id=os.environ.get("GOOGLE_CLIENT_ID"),
+    client_secret=os.environ.get("GOOGLE_CLIENT_SECRET"),
+    server_metadata_url='https://accounts.google.com/.well-known/openid-configuration',
+    client_kwargs={
+        'scope': 'openid email profile'
+    }
+)
 
 app = Flask(__name__)
 app.config['SECRET_KEY'] = os.environ.get(
@@ -105,6 +118,39 @@ class Comment(db.Model):
 def home():
     articles = Article.query.order_by(Article.date_posted.desc()).all()
     return render_template('index.html', articles=articles)
+
+@app.route('/login/google')
+def google_login():
+    redirect_uri = url_for('google_callback', _external=True)
+    return google.authorize_redirect(redirect_uri)
+
+@app.route('/login/google/callback')
+def google_callback():
+
+    token = google.authorize_access_token()
+    user_info = token['userinfo']
+
+    email = user_info['email']
+    name = user_info['name']
+
+    user = User.query.filter_by(email=email).first()
+
+    if not user:
+        user = User(
+            fullname=name,
+            email=email,
+            password='google_auth',
+            is_verified=True
+        )
+
+        db.session.add(user)
+        db.session.commit()
+
+    session['user_id'] = user.id
+    session['user_name'] = user.fullname
+    session['is_admin'] = user.is_admin
+
+    return redirect(url_for('home'))
 
 @app.context_processor
 def inject_notifications():
