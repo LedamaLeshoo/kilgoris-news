@@ -376,10 +376,6 @@ def article(article_id):
         return redirect(url_for('article', article_id=article_id))
     return render_template('article.html', article=art)
 
-@app.route('/ads.txt')
-def ads_txt():
-    return send_from_directory(os.path.dirname(os.path.abspath(__file__)), 'ads.txt')
-
 # --- NEW ROUTE FOR PRIVACY POLICY ---
 @app.route('/privacy-policy')
 def privacy_policy():
