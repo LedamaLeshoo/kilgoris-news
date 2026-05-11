@@ -1,14 +1,14 @@
-/* 1. ROOT VARIABLES - The Logo Colors */
+/* 1. ROOT VARIABLES */
 :root {
-    --navy: #011632;      /* Matches your KN logo blue */
-    --red: #bd081c;       /* Matches your KN logo red */
+    --navy: #011632;
+    --red: #bd081c;
     --white: #ffffff;
     --light-bg: #f4f7f6;
-    --text-dark: #1a1a1a; /* Darker for better readability */
+    --text-dark: #1a1a1a;
     --gray-border: #e1e1e1;
 }
 
-/* 2. GLOBAL RESET & BASE TYPOGRAPHY */
+/* 2. GLOBAL RESET */
 * {
     margin: 0;
     padding: 0;
@@ -21,12 +21,13 @@ body {
     color: var(--text-dark);
     line-height: 1.6;
     font-size: 16px;
+    overflow-x: hidden; /* Prevent side scrolling */
 }
 
 .container {
     max-width: 1200px;
     margin: 0 auto;
-    padding: 0 20px;
+    padding: 0 15px;
 }
 
 /* 3. HEADER LAYOUT */
@@ -39,18 +40,24 @@ body {
     display: flex;
     align-items: center;
     justify-content: space-between;
-    padding: 20px 0;
+    padding: 15px 0;
+    gap: 20px;
+}
+
+/* Logo */
+.header-left {
+    flex-shrink: 0;
 }
 
 .main-logo {
-    height: 110px; 
+    height: 85px;
     width: auto;
     display: block;
 }
 
-/* 4. LARGE CENTERED SEARCH */
+/* Search Center */
 .header-center {
-    flex: 2;
+    flex: 1;
     display: flex;
     justify-content: center;
 }
@@ -58,7 +65,7 @@ body {
 .search-form {
     display: flex;
     width: 100%;
-    max-width: 600px;
+    max-width: 500px;
     border: 2px solid var(--navy);
     border-radius: 4px;
     overflow: hidden;
@@ -66,25 +73,93 @@ body {
 
 .search-input {
     flex-grow: 1;
-    padding: 14px 18px;
+    padding: 12px;
     border: none;
     outline: none;
-    font-size: 18px;
+    font-size: 15px;
 }
 
 .search-submit {
     background: var(--navy);
     color: white;
     border: none;
-    padding: 0 25px;
-    font-size: 20px;
+    padding: 0 18px;
     cursor: pointer;
 }
 
-/* 5. NAVIGATION BAR */
-.category-nav {
-    background-color: var(--red);
-    box-shadow: 0 2px 8px rgba(0,0,0,0.15);
+/* Right Buttons */
+.header-right {
+    display: flex;
+    align-items: center;
+    gap: 15px;
+    flex-shrink: 0;
+}
+
+.subscribe-btn,
+.donate-btn,
+.login-link {
+    padding: 10px 18px;
+    font-size: 14px;
+    text-decoration: none;
+    font-weight: bold;
+    border-radius: 4px;
+    white-space: nowrap;
+}
+
+.subscribe-btn {
+    background: #000;
+    color: #fff;
+}
+
+.donate-btn {
+    background: #ff5722;
+    color: #fff;
+}
+
+.login-link {
+    color: var(--navy);
+}
+
+/* MOBILE RESPONSIVE */
+@media (max-width: 768px) {
+
+    .header-top {
+        flex-wrap: wrap;
+        justify-content: center;
+    }
+
+    .header-left {
+        width: 100%;
+        text-align: center;
+    }
+
+    .header-center {
+        order: 3;
+        width: 100%;
+    }
+
+    .header-right {
+        order: 2;
+        width: 100%;
+        justify-content: center;
+        flex-wrap: wrap;
+    }
+
+    .main-logo {
+        height: 70px;
+        margin: auto;
+    }
+
+    .search-form {
+        max-width: 100%;
+    }
+
+    .subscribe-btn,
+    .donate-btn,
+    .login-link {
+        padding: 8px 12px;
+        font-size: 13px;
+    }
 }
 
 .nav-menu {
@@ -98,112 +173,106 @@ body {
     color: var(--white);
     text-decoration: none;
     font-weight: 800;
-    padding: 18px 22px;
+    padding: 12px 15px;
     display: block;
-    font-size: 18px;
+    font-size: 14px;
     text-transform: uppercase;
-    transition: background 0.3s;
 }
 
-.nav-menu li a:hover {
-    background-color: var(--navy);
-}
-
-/* 6. ACTION BUTTONS & AUTH BUTTONS */
-.header-right {
-    flex: 1;
-    display: flex;
-    justify-content: flex-end;
-    align-items: center;
-    gap: 20px;
-}
-
-/* Standard Button Class (Used for Post Comment, Create Account, Login) */
+/* 7. AUTH FORMS (Login/Register) */
 .btn, button[type="submit"] {
     background-color: var(--navy);
     color: var(--white);
-    padding: 12px 25px;
+    padding: 12px;
     border: none;
     border-radius: 4px;
-    text-decoration: none;
     font-weight: bold;
-    font-size: 16px;
+    width: 100%;
     cursor: pointer;
-    transition: background 0.3s ease;
-    display: inline-block;
-    width: 100%; /* Makes login/register buttons full width like in your screenshots */
-    text-align: center;
 }
 
-.btn:hover, button[type="submit"]:hover {
-    background-color: var(--red);
+/* 8. MEDIA QUERIES FOR LARGER SCREENS */
+@media (min-width: 768px) {
+    .main-logo { height: 110px; }
+    .header-center { flex: 2; order: 2; }
+    .header-right { order: 3; }
+    .nav-menu li a { font-size: 18px; padding: 18px 22px; }
+    .subscribe-btn, .donate-btn, .login-link { padding: 12px 25px; font-size: 16px; }
 }
 
-.subscribe-btn {
-    background-color: #000000;
-    color: var(--white);
-    padding: 12px 25px;
-    border-radius: 4px;
-    text-decoration: none;
-    font-weight: bold;
-    font-size: 16px;
-    text-transform: uppercase;
-}
-
-.donate-btn {
-    background-color: #ff5722;
-    color: white;
-    padding: 12px 25px;
-    border-radius: 4px;
-    text-decoration: none;
-    font-weight: bold;
-    font-size: 16px;
-}
-
-.login-link {
-    color: var(--navy);
-    text-decoration: none;
-    font-weight: 700;
-    font-size: 16px;
-}
-
-/* Styling for "Don't have an account? Sign up here" */
-form p {
-    margin-top: 20px;
-    text-align: center;
-    font-size: 15px;
-}
-
-form p a {
-    color: var(--red);
-    font-weight: bold;
-    text-decoration: none;
-}
-
-form p a:hover {
-    text-decoration: underline;
-}
-
-/* 7. NEWS TITLES */
-h2, .article-title {
-    font-size: 24px;
-    font-weight: 800;
-    color: var(--navy);
-    margin-bottom: 10px;
-}
-
-/* 8. MINIMAL FOOTER */
+/* FOOTER */
 .minimal-footer {
     background: var(--navy);
     color: var(--white);
     text-align: center;
-    padding: 40px 0;
-    margin-top: 60px;
+    padding: 20px 0;
+    margin-top: 40px;
     border-top: 6px solid var(--red);
 }
 
-.minimal-footer p {
-    font-weight: bold;
-    font-size: 16px;
-    letter-spacing: 1px;
+/* Ticker Styles */
+.breaking-news-ticker {
+    background: var(--navy);
+    color: var(--white);
+    display: flex;
+    align-items: center;
+    height: 40px;
+    overflow: hidden;
+    position: relative;
+    border-bottom: 2px solid var(--red);
+    z-index: 1000;
+}
+
+.ticker-label {
+    background: var(--red);
+    padding: 0 20px;
+    height: 100%;
+    display: flex;
+    align-items: center;
+    font-weight: 900;
+    font-size: 0.8rem;
+    white-space: nowrap;
+    position: relative;
+    z-index: 2;
+}
+
+.ticker-content {
+    flex: 1;
+    overflow: hidden;
+    display: flex;
+    align-items: center;
+}
+
+.ticker-text {
+    display: inline-block;
+    white-space: nowrap;
+    padding-left: 100%;
+    animation: ticker-scroll 25s linear infinite;
+}
+
+.ticker-text span {
+    margin-right: 50px;
+    font-weight: 500;
+    font-size: 0.95rem;
+}
+
+.ticker-text i {
+    color: #ffd700; /* Gold bolt icon */
+    margin-right: 8px;
+}
+
+/* Animation for the moving text */
+@keyframes ticker-scroll {
+    0% { transform: translate3d(0, 0, 0); }
+    100% { transform: translate3d(-100%, 0, 0); }
+}
+
+/* Pause animation on hover for readability */
+.breaking-news-ticker:hover .ticker-text {
+    animation-play-state: paused;
+}
+
+.card {
+    display: flex;
+    flex-direction: column;
 }
