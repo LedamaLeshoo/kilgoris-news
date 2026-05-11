@@ -49,18 +49,37 @@
 
         <!-- Auth & Action Buttons -->
         <div class="header-right">
-            <a href="/donate" class="donate-btn">DONATE</a>
-            {% if not session.get('user_id') %}
-                <a href="/login" class="login-link">LOGIN</a>
-                <a href="/register" class="subscribe-btn">REGISTER</a>
-            {% else %}
-                <a href="/logout" class="login-link">LOGOUT</a>
-                {% if session.get('is_admin') %}
-                    <a href="/admin" class="subscribe-btn">ADMIN</a>
-                {% endif %}
+
+    {% if session.get('user_id') %}
+    <div style="position: relative; display: inline-block; margin-right: 20px;">
+        <a href="{{ url_for('notifications') }}" style="color: white; text-decoration: none;">
+            <i class="fas fa-bell" style="font-size: 1.2rem;"></i>
+
+            {% if unread_count > 0 %}
+            <span style="position: absolute; top: -8px; right: -10px; background: red; color: white; border-radius: 50%; padding: 2px 6px; font-size: 0.7rem;">
+                {{ unread_count }}
+            </span>
             {% endif %}
-        </div>
+        </a>
     </div>
+    {% endif %}
+
+    <a href="/donate" class="donate-btn">DONATE</a>
+
+    {% if not session.get('user_id') %}
+        <a href="/login" class="login-link">LOGIN</a>
+        <a href="/register" class="subscribe-btn">REGISTER</a>
+    {% else %}
+        <span>Welcome, {{ session.get('user_name') }}</span>
+        <a href="/logout" class="login-link">LOGOUT</a>
+
+        {% if session.get('is_admin') %}
+            <a href="/admin" class="subscribe-btn">ADMIN</a>
+        {% endif %}
+    {% endif %}
+</div>
+    <span>Welcome, {{ session.get('user_name') }}</span>
+{% endif %}
 
     <!-- Red Category Nav (Tuko Style) -->
     <nav class="category-nav">

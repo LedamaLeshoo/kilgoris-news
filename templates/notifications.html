@@ -1,0 +1,58 @@
+{% extends 'base.html' %}
+{% block content %}
+<div class="container" style="margin-top: 40px; margin-bottom: 60px; max-width: 800px;">
+    <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 30px;">
+        <h2 style="color: var(--navy); font-weight: 800; text-transform: uppercase; margin: 0;">
+            <i class="fas fa-bell"></i> Your Notifications
+        </h2>
+        <span style="background: #eee; padding: 5px 12px; border-radius: 20px; font-size: 0.85rem; color: #666;">
+            {{ user_notifications|length }} Total
+        </span>
+    </div>
+
+    <div class="notifications-list">
+        {% for notif in user_notifications %}
+            <div style="background: white; padding: 20px; border-radius: 10px; margin-bottom: 15px; 
+                        border-left: 5px solid {% if not notif.is_read %}var(--red){% else %}#ddd{% endif %}; 
+                        box-shadow: 0 2px 10px rgba(0,0,0,0.05); position: relative;">
+                
+                <div style="display: flex; justify-content: space-between; align-items: flex-start;">
+                    <p style="margin: 0; font-size: 1.05rem; color: #333; line-height: 1.5; flex: 1;">
+                        {{ notif.message }}
+                    </p>
+                    {% if not notif.is_read %}
+                        <span style="background: var(--red); color: white; font-size: 0.7rem; padding: 2px 8px; border-radius: 10px; margin-left: 10px; text-transform: uppercase; font-weight: bold;">New</span>
+                    {% endif %}
+                </div>
+
+                <div style="margin-top: 12px; display: flex; justify-content: space-between; align-items: center;">
+                    <span style="font-size: 0.8rem; color: #888;">
+                        <i class="far fa-clock"></i> {{ notif.timestamp.strftime('%B %d, %H:%M') }}
+                    </span>
+                    
+                    {% if notif.link %}
+                        <a href="{{ notif.link }}" style="color: var(--navy); text-decoration: none; font-size: 0.9rem; font-weight: bold; border-bottom: 2px solid var(--navy);">
+                            View Details <i class="fas fa-arrow-right" style="font-size: 0.75rem;"></i>
+                        </a>
+                    {% endif %}
+                </div>
+            </div>
+        {% else %}
+            <div style="text-align: center; padding: 60px 20px; background: white; border-radius: 12px; border: 2px dashed #eee;">
+                <i class="fas fa-bell-slash" style="font-size: 3rem; color: #ddd; margin-bottom: 15px;"></i>
+                <h3 style="color: #999;">No notifications yet</h3>
+                <p style="color: #bbb;">We'll notify you here when your reports are approved or when there's news for you.</p>
+                <a href="{{ url_for('home') }}" class="subscribe-btn" style="display: inline-block; margin-top: 20px; text-decoration: none;">Return Home</a>
+            </div>
+        {% endfor %}
+    </div>
+</div>
+
+<style>
+    .notifications-list div:hover {
+        transform: translateY(-2px);
+        transition: all 0.2s ease;
+        box-shadow: 0 4px 15px rgba(0,0,0,0.1);
+    }
+</style>
+{% endblock %}
