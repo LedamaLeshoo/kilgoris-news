@@ -21,7 +21,7 @@ body {
     color: var(--text-dark);
     line-height: 1.6;
     font-size: 16px;
-    overflow-x: hidden;
+    overflow-x: hidden; /* Prevent side scrolling */
 }
 
 .container {
@@ -30,62 +30,136 @@ body {
     padding: 0 15px;
 }
 
-/* 3. HEADER LAYOUT - FIXED FOR NO-WRAP */
+/* 3. HEADER LAYOUT - UPDATED FOR MOBILE VISIBILITY */
 .site-header {
     background: var(--white);
     border-bottom: 1px solid var(--gray-border);
-    position: sticky;
-    top: 0;
-    z-index: 1000;
 }
 
 .header-top {
     display: flex;
-    flex-wrap: nowrap; /* Prevents logo and login from splitting */
+    flex-wrap: wrap; /* Allows items to drop to next line on mobile */
     align-items: center;
     justify-content: space-between;
     padding: 15px 0;
+    gap: 10px;
 }
 
-.login-link {
+.main-logo {
+    height: 70px; /* Reduced for mobile */
+    width: auto;
+    display: block;
+}
+
+/* 4. SEARCH BOX - RESPONSIVE */
+.header-center {
+    flex: 1 1 100%; /* Takes full width on mobile */
+    order: 3; /* Pushes search below logo and buttons on mobile */
+    display: flex;
+    justify-content: center;
+}
+
+.search-form {
+    display: flex;
+    width: 100%;
+    max-width: 600px;
+    border: 2px solid var(--navy);
+    border-radius: 4px;
+    overflow: hidden;
+}
+
+.search-input {
+    flex-grow: 1;
+    padding: 10px;
+    border: none;
+    outline: none;
+    font-size: 16px;
+}
+
+.search-submit {
     background: var(--navy);
     color: white;
-    padding: 8px 20px;
-    border-radius: 4px;
-    text-decoration: none;
-    font-weight: bold;
-    font-size: 0.9rem;
+    border: none;
+    padding: 0 15px;
+    cursor: pointer;
 }
 
-/* 4. CATEGORY MENU - FIXED FOR HORIZONTAL TABS */
-.category-menu {
-    background: var(--red);
+/* 5. ACTION BUTTONS - FIXED FOR MOBILE */
+.header-right {
     display: flex;
-    overflow-x: auto; /* Allows side-scrolling */
-    white-space: nowrap; /* Forces items into one line */
-    -webkit-overflow-scrolling: touch;
-    scrollbar-width: none; /* Hides scrollbar for Firefox */
+    justify-content: flex-end;
+    align-items: center;
+    gap: 10px;
+    order: 2; /* Keeps buttons at the top right next to logo */
 }
 
-.category-menu::-webkit-scrollbar {
-    display: none; /* Hides scrollbar for Chrome/Safari */
-}
-
-.category-menu a {
-    color: white;
-    padding: 12px 20px;
+.subscribe-btn, .donate-btn, .login-link {
+    padding: 8px 12px;
+    font-size: 14px;
     text-decoration: none;
     font-weight: bold;
-    font-size: 0.85rem;
-    display: inline-block;
-    flex-shrink: 0; /* Prevents tabs from squishing */
+    border-radius: 4px;
+    white-space: nowrap; /* Keeps text on one line */
 }
 
-.category-menu a:hover {
-    background: rgba(255,255,255,0.1);
+.subscribe-btn { background: #000; color: #fff; }
+.donate-btn { background: #ff5722; color: #fff; }
+.login-link { color: var(--navy); }
+
+/* 6. NAVIGATION MENU */
+.category-nav {
+    background-color: var(--red);
 }
 
-/* 5. TICKER STYLES */
+.nav-menu {
+    list-style: none;
+    display: flex;
+    justify-content: center;
+    flex-wrap: wrap;
+}
+
+.nav-menu li a {
+    color: var(--white);
+    text-decoration: none;
+    font-weight: 800;
+    padding: 12px 15px;
+    display: block;
+    font-size: 14px;
+    text-transform: uppercase;
+}
+
+/* 7. AUTH FORMS (Login/Register) */
+.btn, button[type="submit"] {
+    background-color: var(--navy);
+    color: var(--white);
+    padding: 12px;
+    border: none;
+    border-radius: 4px;
+    font-weight: bold;
+    width: 100%;
+    cursor: pointer;
+}
+
+/* 8. MEDIA QUERIES FOR LARGER SCREENS */
+@media (min-width: 768px) {
+    .main-logo { height: 110px; }
+    .header-center { flex: 2; order: 2; }
+    .header-right { order: 3; }
+    .nav-menu li a { font-size: 18px; padding: 18px 22px; }
+    .subscribe-btn, .donate-btn, .login-link { padding: 12px 25px; font-size: 16px; }
+}
+
+/* FOOTER */
+.minimal-footer {
+    background: var(--navy);
+    color: var(--white);
+    text-align: center;
+    padding: 20px 0;
+    margin-top: 40px;
+    border-top: 6px solid var(--red);
+}
+
+/* Ticker Styles */
 .breaking-news-ticker {
     background: var(--navy);
     color: var(--white);
@@ -93,7 +167,9 @@ body {
     align-items: center;
     height: 40px;
     overflow: hidden;
+    position: relative;
     border-bottom: 2px solid var(--red);
+    z-index: 1000;
 }
 
 .ticker-label {
@@ -105,7 +181,15 @@ body {
     font-weight: 900;
     font-size: 0.8rem;
     white-space: nowrap;
+    position: relative;
     z-index: 2;
+}
+
+.ticker-content {
+    flex: 1;
+    overflow: hidden;
+    display: flex;
+    align-items: center;
 }
 
 .ticker-text {
@@ -115,29 +199,114 @@ body {
     animation: ticker-scroll 25s linear infinite;
 }
 
+.ticker-text span {
+    margin-right: 50px;
+    font-weight: 500;
+    font-size: 0.95rem;
+}
+
+.ticker-text i {
+    color: #ffd700; /* Gold bolt icon */
+    margin-right: 8px;
+}
+
+/* Animation for the moving text */
 @keyframes ticker-scroll {
-    0% { transform: translateX(0); }
-    100% { transform: translateX(-200%); }
+    0% { transform: translate3d(0, 0, 0); }
+    100% { transform: translate3d(-100%, 0, 0); }
 }
 
-/* 6. BUTTONS */
-.subscribe-btn {
-    display: inline-block;
-    padding: 12px 24px;
-    background: var(--navy);
+/* Pause animation on hover for readability */
+.breaking-news-ticker:hover .ticker-text {
+    animation-play-state: paused;
+}
+
+.card {
+    display: flex;
+    flex-direction: column;
+}
+/* Fix Header Layout */
+.header-top {
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    padding: 15px 0;
+    gap: 20px;
+}
+
+.search-bar {
+    flex: 1;
+    max-width: 500px;
+}
+
+.user-actions {
+    display: flex;
+    align-items: center;
+    gap: 15px;
+}
+
+/* Notification Styling */
+.notification-wrapper {
+    position: relative;
+}
+
+.notification-wrapper i {
+    font-size: 1.4rem;
+    color: var(--navy);
+}
+
+.notif-badge {
+    position: absolute;
+    top: -8px;
+    right: -8px;
+    background: var(--red);
     color: white;
+    font-size: 0.7rem;
+    padding: 2px 5px;
+    border-radius: 50%;
     font-weight: bold;
-    border-radius: 6px;
-    border: none;
-    cursor: pointer;
 }
 
-/* 7. FOOTER */
-.minimal-footer {
+.user-name {
+    font-weight: bold;
+    color: var(--navy);
+    font-size: 0.9rem;
+}
+
+.auth-link {
+    text-decoration: none;
+    color: var(--navy);
+    font-size: 0.9rem;
+}
+
+/* Clean up Main Nav */
+.main-nav {
     background: var(--navy);
+}
+
+.main-nav ul {
+    list-style: none;
+    display: flex;
+    gap: 20px;
+    padding: 10px 0;
+}
+
+.main-nav a {
     color: white;
-    text-align: center;
-    padding: 30px 0;
-    margin-top: 50px;
-    border-top: 5px solid var(--red);
+    text-decoration: none;
+    font-weight: bold;
+    font-size: 0.85rem;
+    text-transform: uppercase;
+}
+
+/* Mobile Responsiveness */
+@media (max-width: 768px) {
+    .header-top {
+        flex-direction: column;
+        text-align: center;
+    }
+    .main-nav ul {
+        flex-wrap: wrap;
+        justify-content: center;
+    }
 }
