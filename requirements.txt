@@ -5,4 +5,4 @@ gunicorn
 werkzeug
 flask-mail
 cloudinary
-Authlib
+Authlib==1.3.0

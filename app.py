@@ -11,6 +11,13 @@ from werkzeug.security import generate_password_hash, check_password_hash
 from itsdangerous import URLSafeTimedSerializer
 from authlib.integrations.flask_client import OAuth
 
+app = Flask(__name__)
+
+app.config['SECRET_KEY'] = os.environ.get(
+    'SECRET_KEY',
+    'kilgoris_news_professional_2026'
+)
+
 oauth = OAuth(app)
 
 google = oauth.register(
@@ -23,11 +30,6 @@ google = oauth.register(
     }
 )
 
-app = Flask(__name__)
-app.config['SECRET_KEY'] = os.environ.get(
-    'SECRET_KEY',
-    'kilgoris_news_professional_2026'
-)
 
 app.secret_key = app.config['SECRET_KEY']
 
