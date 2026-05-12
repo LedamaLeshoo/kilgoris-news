@@ -111,5 +111,20 @@
             <p>Developed by Ledama Samwel Leshoo</p>
         </div>
     </footer>
+    <script src="https://cdn.socket.io/4.5.4/socket.io.min.js"></script>
 </body>
+<script src="https://cdn.socket.io/4.5.4/socket.io.min.js"></script>
+
+<script>
+const socket = io();
+
+socket.on('new_article', function(data) {
+
+    // Alert popup
+    alert("📰 BREAKING NEWS: " + data.title);
+
+    // Optional auto reload
+    location.reload();
+});
+</script>
 </html>
