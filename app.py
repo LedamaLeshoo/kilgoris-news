@@ -10,9 +10,10 @@ from datetime import datetime
 from werkzeug.security import generate_password_hash, check_password_hash
 from itsdangerous import URLSafeTimedSerializer
 from authlib.integrations.flask_client import OAuth
+from flask_socketio import SocketIO, emit
 
 app = Flask(__name__)
-
+socketio = SocketIO(app, cors_allowed_origins="*")
 app.config['SECRET_KEY'] = os.environ.get(
     'SECRET_KEY',
     'kilgoris_news_professional_2026'
@@ -400,6 +401,14 @@ def create_article():
         )
         db.session.add(new_art)
         db.session.commit()
+        data = {
+            "title": new_art.title,
+            "category": new_art.category,
+            "image": new_art.file_path,
+            "url": url_for('article', article_id=new_art.id)
+        }
+
+        socketio.emit('new_article', data)
         flash("Article Published Successfully!", "success")
         return redirect(url_for('home'))
     return render_template('create_article.html')
@@ -489,4 +498,4 @@ with app.app_context(): # WARNING: This will delete all existing data. Use with 
     db.create_all()
 
 if __name__ == '__main__':
-    app.run(debug=False)
+    socketio.run(app, host='0.0.0.0', port=5000, debug=False)
