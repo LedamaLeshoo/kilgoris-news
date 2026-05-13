@@ -1,3 +1,7 @@
+# ⚡ Must be the very first lines – enable gevent async support
+from gevent import monkey
+monkey.patch_all()
+
 import os
 import random
 import string
