@@ -16,8 +16,6 @@ from itsdangerous import URLSafeTimedSerializer
 from authlib.integrations.flask_client import OAuth
 from flask_socketio import SocketIO, emit
 from functools import wraps
-from flask import Flask, render_template, request, redirect, url_for, session, flash, json
-
 
 # --- APP INITIALIZATION ---
 app = Flask(__name__)
@@ -59,9 +57,8 @@ cloudinary.config(
     api_key=os.environ.get('CLOUDINARY_API_KEY'),
     api_secret=os.environ.get('CLOUDINARY_API_SECRET')
 )
-# Validate that all keys are present
 if not all([cloudinary.config().cloud_name, cloudinary.config().api_key, cloudinary.config().api_secret]):
-    raise RuntimeError("Cloudinary environment variables (CLOUDINARY_CLOUD_NAME, CLOUDINARY_API_KEY, CLOUDINARY_API_SECRET) must be set.")
+    raise RuntimeError("Cloudinary environment variables must be set.")
 
 # --- APP CONFIG ---
 app.config['MAX_CONTENT_LENGTH'] = 50 * 1024 * 1024  # 50MB
@@ -84,7 +81,6 @@ db = SQLAlchemy(app)
 
 # --- CSRF PROTECTION ---
 def generate_csrf_token():
-    """Generate a random token and store it in the session."""
     if '_csrf_token' not in session:
         import secrets
         session['_csrf_token'] = secrets.token_hex(32)
@@ -93,7 +89,6 @@ def generate_csrf_token():
 app.jinja_env.globals['csrf_token'] = generate_csrf_token
 
 def csrf_protect(f):
-    """Decorator that checks CSRF token for POST/PUT/DELETE requests."""
     @wraps(f)
     def decorated_function(*args, **kwargs):
         if request.method in ('POST', 'PUT', 'DELETE'):
@@ -115,7 +110,7 @@ class User(db.Model):
     is_admin = db.Column(db.Boolean, default=False)
     is_verified = db.Column(db.Boolean, default=False)
     otp_code = db.Column(db.String(6))
-    otp_expiry = db.Column(db.DateTime)  # NEW: OTP expiry time
+    otp_expiry = db.Column(db.DateTime)
     comments = db.relationship('Comment', backref='author', lazy=True)
 
 class Article(db.Model):
@@ -131,7 +126,7 @@ class Article(db.Model):
 class CommunityReport(db.Model):
     id = db.Column(db.Integer, primary_key=True)
     reporter_name = db.Column(db.String(100), nullable=False)
-    user_id = db.Column(db.Integer, db.ForeignKey('user.id'), nullable=True)  # NEW: link to user
+    user_id = db.Column(db.Integer, db.ForeignKey('user.id'), nullable=True)
     category = db.Column(db.String(50), nullable=False)
     title = db.Column(db.String(100), nullable=False)
     location = db.Column(db.String(100), nullable=False)
@@ -142,7 +137,7 @@ class CommunityReport(db.Model):
 
 class Notification(db.Model):
     id = db.Column(db.Integer, primary_key=True)
-    user_id = db.Column(db.Integer, db.ForeignKey('user.id'), nullable=False, index=True)  # index added
+    user_id = db.Column(db.Integer, db.ForeignKey('user.id'), nullable=False, index=True)
     message = db.Column(db.String(255), nullable=False)
     link = db.Column(db.String(255))
     is_read = db.Column(db.Boolean, default=False)
@@ -154,10 +149,40 @@ class Comment(db.Model):
     body = db.Column(db.Text, nullable=False)
     date_posted = db.Column(db.DateTime, default=datetime.utcnow)
     likes = db.Column(db.Integer, default=0)
-    article_id = db.Column(db.Integer, db.ForeignKey('article.id'), nullable=False, index=True)  # index
-    user_id = db.Column(db.Integer, db.ForeignKey('user.id'), nullable=False, index=True)    # index
+    article_id = db.Column(db.Integer, db.ForeignKey('article.id'), nullable=False, index=True)
+    user_id = db.Column(db.Integer, db.ForeignKey('user.id'), nullable=False, index=True)
     parent_id = db.Column(db.Integer, db.ForeignKey('comment.id'))
     replies = db.relationship('Comment', backref=db.backref('parent', remote_side=[id]), lazy=True)
+
+# --- SOCKET.IO EVENTS ---
+@socketio.on('connect')
+def handle_connect():
+    app.logger.info(f"Client connected: {request.sid}")
+
+@socketio.on('disconnect')
+def handle_disconnect():
+    app.logger.info(f"Client disconnected: {request.sid}")
+
+@socketio.on('join_user_room')
+def handle_join_user_room():
+    user_id = session.get('user_id')
+    if user_id:
+        room = f"user_{user_id}"
+        socketio.server.enter_room(request.sid, room, namespace='/')
+        app.logger.info(f"User {user_id} joined room {room}")
+
+@socketio.on('join_article_room')
+def handle_join_article_room(data):
+    article_id = data.get('article_id')
+    if article_id:
+        room = f"article_{article_id}"
+        socketio.server.enter_room(request.sid, room, namespace='/')
+        app.logger.info(f"Client joined article room {room}")
+
+@socketio.on('join_community_room')
+def handle_join_community_room():
+    socketio.server.enter_room(request.sid, 'community_reports', namespace='/')
+    app.logger.info("Client joined community_reports room")
 
 # --- ROUTES ---
 @app.route('/')
@@ -176,54 +201,42 @@ def google_callback():
     user_info = token['userinfo']
     email = user_info['email']
     name = user_info['name']
-
     user = User.query.filter_by(email=email).first()
     if not user:
         user = User(
             fullname=name,
             email=email,
-            password='google_auth',  # placeholder, never used for Google login
+            password='google_auth',
             is_verified=True
         )
         db.session.add(user)
         db.session.commit()
-
     session['user_id'] = user.id
     session['user_name'] = user.fullname
     session['is_admin'] = user.is_admin
     return redirect(url_for('home'))
 
-# Context processor for notification count
 @app.context_processor
 def inject_notifications():
     if 'user_id' in session:
         unread_count = Notification.query.filter_by(
-            user_id=session['user_id'],
-            is_read=False
+            user_id=session['user_id'], is_read=False
         ).count()
         return dict(unread_count=unread_count)
     return dict(unread_count=0)
 
-# Context processor for latest articles (renamed to avoid shadowing)
 @app.context_processor
 def inject_latest_articles():
-    latest_articles = Article.query.order_by(
-        Article.date_posted.desc()
-    ).limit(5).all()
+    latest_articles = Article.query.order_by(Article.date_posted.desc()).limit(5).all()
     return dict(latest_articles=latest_articles)
 
 @app.route('/notifications')
 def notifications():
     if not session.get('user_id'):
         return redirect(url_for('login'))
-    user_notifications = Notification.query.filter_by(
-        user_id=session['user_id']
-    ).order_by(Notification.timestamp.desc()).all()
-    # Mark all as read
-    unread = Notification.query.filter_by(
-        user_id=session['user_id'],
-        is_read=False
-    ).all()
+    user_notifications = Notification.query.filter_by(user_id=session['user_id'])\
+        .order_by(Notification.timestamp.desc()).all()
+    unread = Notification.query.filter_by(user_id=session['user_id'], is_read=False).all()
     for n in unread:
         n.is_read = True
     db.session.commit()
@@ -236,7 +249,6 @@ def approve_report(report_id):
     report = CommunityReport.query.get_or_404(report_id)
     report.is_approved = True
 
-    # If the reporter is a registered user, notify them in real time
     if report.user_id:
         try:
             notif = Notification(
@@ -246,9 +258,7 @@ def approve_report(report_id):
                 is_read=False
             )
             db.session.add(notif)
-            db.session.commit()  # commit to get notif.id if needed
-
-            # Emit live notification update
+            db.session.commit()
             unread_count = Notification.query.filter_by(
                 user_id=report.user_id, is_read=False
             ).count()
@@ -260,11 +270,10 @@ def approve_report(report_id):
             }, room=room)
         except Exception as e:
             db.session.rollback()
-            app.logger.error(f"Failed to create notification: {e}")
+            app.logger.error(f"Notification error: {e}")
     else:
         db.session.commit()
 
-    # Also emit to community reports feed (live update of approved reports)
     socketio.emit('report_approved', {
         'id': report.id,
         'reporter_name': report.reporter_name,
@@ -299,11 +308,9 @@ def community_reporter():
         location = request.form.get('location')
         description = request.form.get('description')
         file = request.files.get('report_file')
-
-        # If user is logged in, capture their user_id
         user_id = session.get('user_id', None)
-
         file_url = None
+
         if file and file.filename != '':
             filename = file.filename.lower()
             if filename.endswith(('.mp4', '.mov', '.avi', '.mkv')):
@@ -318,7 +325,6 @@ def community_reporter():
             except Exception as e:
                 app.logger.error(f"Cloudinary upload failed: {e}")
                 flash(f"File upload failed: {e}", "danger")
-                # Continue without file – user intentionally chose to upload, so we stop
                 return redirect(url_for('community_reporter'))
 
         new_report = CommunityReport(
@@ -349,7 +355,7 @@ def register():
             return redirect(url_for('register'))
 
         otp = ''.join(random.choices(string.digits, k=6))
-        otp_expiry = datetime.utcnow() + timedelta(minutes=10)  # OTP valid for 10 minutes
+        otp_expiry = datetime.utcnow() + timedelta(minutes=10)
         hashed_pw = generate_password_hash(request.form.get('password'))
         new_user = User(
             fullname=request.form.get('fullname'),
@@ -361,7 +367,6 @@ def register():
         db.session.add(new_user)
         db.session.commit()
 
-        # Send verification email
         try:
             msg = Message(
                 'Verify your Kilgoris News Account',
@@ -376,7 +381,6 @@ def register():
             app.logger.error(f"Failed to send verification email: {e}")
             flash("Account created, but verification email could not be sent. "
                   "Please request a new code on the verification page.", "warning")
-            # Still redirect to verify page so user can request a new code
             session['verify_email'] = email
             return redirect(url_for('verify'))
 
@@ -390,11 +394,9 @@ def verify():
         if not user:
             flash("No account found. Please register again.", "danger")
             return redirect(url_for('register'))
-
         if user.otp_expiry and datetime.utcnow() > user.otp_expiry:
             flash("Verification code has expired. Request a new one below.", "warning")
             return render_template('verify.html', resend=True)
-
         if user.otp_code == request.form.get('otp'):
             user.is_verified = True
             user.otp_code = None
@@ -417,7 +419,6 @@ def resend_otp():
     if not user:
         flash("User not found.", "danger")
         return redirect(url_for('register'))
-    # Generate new OTP
     new_otp = ''.join(random.choices(string.digits, k=6))
     user.otp_code = new_otp
     user.otp_expiry = datetime.utcnow() + timedelta(minutes=10)
@@ -518,7 +519,8 @@ def create_article():
         )
         db.session.add(new_art)
         db.session.commit()
-                data = {
+
+        data = {
             "id": new_art.id,
             "title": new_art.title,
             "category": new_art.category or 'Latest Update',
@@ -619,7 +621,6 @@ def article(article_id):
         db.session.add(comment)
         db.session.commit()
 
-        # Emit real‑time comment to all viewers of this article
         commenter_name = User.query.get(session['user_id']).fullname
         socketio.emit('new_comment', {
             'id': comment.id,
@@ -638,40 +639,7 @@ def article(article_id):
 def privacy_policy():
     return render_template('privacy.html')
 
-# --------------------- SOCKET.IO EVENTS ---------------------
-@socketio.on('connect')
-def handle_connect():
-    app.logger.info(f"Client connected: {request.sid}")
-
-@socketio.on('disconnect')
-def handle_disconnect():
-    app.logger.info(f"Client disconnected: {request.sid}")
-
-@socketio.on('join_user_room')
-def handle_join_user_room(data):
-    """Join a user to their personal notification room."""
-    user_id = session.get('user_id')
-    if user_id:
-        room = f"user_{user_id}"
-        socketio.server.enter_room(request.sid, room, namespace='/')
-        app.logger.info(f"User {user_id} joined room {room}")
-
-@socketio.on('join_article_room')
-def handle_join_article_room(data):
-    """Join a user to an article's comment room."""
-    article_id = data.get('article_id')
-    if article_id:
-        room = f"article_{article_id}"
-        socketio.server.enter_room(request.sid, room, namespace='/')
-        app.logger.info(f"Client joined article room {room}")
-
-@socketio.on('join_community_room')
-def handle_join_community_room():
-    """Join the community reports feed room."""
-    socketio.server.enter_room(request.sid, 'community_reports', namespace='/')
-    app.logger.info("Client joined community_reports room")
-
-# Initialize database tables (safe – no data deletion)
+# Initialize database
 with app.app_context():
     db.create_all()
 
