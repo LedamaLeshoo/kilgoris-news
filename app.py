@@ -1,56 +1,70 @@
 import os
 import random
 import string
+import logging
+from datetime import datetime, timedelta
 import cloudinary
 import cloudinary.uploader
-from flask import Flask, render_template, request, redirect, url_for, flash, session, send_from_directory
+from flask import (
+    Flask, render_template, request, redirect, url_for, flash,
+    session, send_from_directory, abort
+)
 from flask_sqlalchemy import SQLAlchemy
 from flask_mail import Mail, Message
-from datetime import datetime
 from werkzeug.security import generate_password_hash, check_password_hash
 from itsdangerous import URLSafeTimedSerializer
 from authlib.integrations.flask_client import OAuth
 from flask_socketio import SocketIO, emit
+from functools import wraps
 
+# --- APP INITIALIZATION ---
 app = Flask(__name__)
-# Update your app.py SocketIO initialization
-socketio = SocketIO(app, 
-    cors_allowed_origins="*", 
-    ping_timeout=60, 
-    ping_interval=25
-)
-app.config['SECRET_KEY'] = os.environ.get(
-    'SECRET_KEY',
-    'kilgoris_news_professional_2026'
-)
 
+# Secret key – MUST be set in environment, no fallback
+app.config['SECRET_KEY'] = os.environ.get('SECRET_KEY')
+if not app.config['SECRET_KEY']:
+    raise RuntimeError("SECRET_KEY environment variable is not set.")
 app.secret_key = app.config['SECRET_KEY']
 
-oauth = OAuth(app)
+# Logging
+logging.basicConfig(level=logging.INFO)
+app.logger.setLevel(logging.INFO)
 
+# Socket.IO
+socketio = SocketIO(
+    app,
+    cors_allowed_origins="*",
+    ping_timeout=60,
+    ping_interval=25
+)
+
+# OAuth
+oauth = OAuth(app)
 google = oauth.register(
     name='google',
     client_id=os.environ.get("GOOGLE_CLIENT_ID"),
     client_secret=os.environ.get("GOOGLE_CLIENT_SECRET"),
     server_metadata_url='https://accounts.google.com/.well-known/openid-configuration',
-    client_kwargs={
-        'scope': 'openid email profile'
-    }
+    client_kwargs={'scope': 'openid email profile'}
 )
 
+# Serializer for reset tokens
 s = URLSafeTimedSerializer(app.config['SECRET_KEY'])
 
 # --- CLOUDINARY CONFIGURATION ---
-cloudinary.config( 
-  cloud_name = os.environ.get('CLOUDINARY_CLOUD_NAME', 'dfowijvky'), 
-  api_key = os.environ.get('CLOUDINARY_API_KEY'), 
-  api_secret = os.environ.get('CLOUDINARY_API_SECRET') 
+cloudinary.config(
+    cloud_name=os.environ.get('CLOUDINARY_CLOUD_NAME'),
+    api_key=os.environ.get('CLOUDINARY_API_KEY'),
+    api_secret=os.environ.get('CLOUDINARY_API_SECRET')
 )
+# Validate that all keys are present
+if not all([cloudinary.config().cloud_name, cloudinary.config().api_key, cloudinary.config().api_secret]):
+    raise RuntimeError("Cloudinary environment variables (CLOUDINARY_CLOUD_NAME, CLOUDINARY_API_KEY, CLOUDINARY_API_SECRET) must be set.")
 
-# --- CONFIGURATION ---
-app.config['MAX_CONTENT_LENGTH'] = 50 * 1024 * 1024
+# --- APP CONFIG ---
+app.config['MAX_CONTENT_LENGTH'] = 50 * 1024 * 1024  # 50MB
 
-# Email Config
+# Email config
 app.config['MAIL_SERVER'] = 'smtp.gmail.com'
 app.config['MAIL_PORT'] = 587
 app.config['MAIL_USE_TLS'] = True
@@ -66,6 +80,29 @@ app.config['SQLALCHEMY_DATABASE_URI'] = database_url or 'sqlite:///kilgoris.db'
 app.config['SQLALCHEMY_TRACK_MODIFICATIONS'] = False
 db = SQLAlchemy(app)
 
+# --- CSRF PROTECTION ---
+def generate_csrf_token():
+    """Generate a random token and store it in the session."""
+    if '_csrf_token' not in session:
+        import secrets
+        session['_csrf_token'] = secrets.token_hex(32)
+    return session['_csrf_token']
+
+app.jinja_env.globals['csrf_token'] = generate_csrf_token
+
+def csrf_protect(f):
+    """Decorator that checks CSRF token for POST/PUT/DELETE requests."""
+    @wraps(f)
+    def decorated_function(*args, **kwargs):
+        if request.method in ('POST', 'PUT', 'DELETE'):
+            token = session.get('_csrf_token', None)
+            form_token = request.form.get('_csrf_token')
+            if not token or not form_token or token != form_token:
+                app.logger.warning("CSRF validation failed")
+                abort(400, description="CSRF token missing or incorrect.")
+        return f(*args, **kwargs)
+    return decorated_function
+
 # --- MODELS ---
 class User(db.Model):
     id = db.Column(db.Integer, primary_key=True)
@@ -76,6 +113,7 @@ class User(db.Model):
     is_admin = db.Column(db.Boolean, default=False)
     is_verified = db.Column(db.Boolean, default=False)
     otp_code = db.Column(db.String(6))
+    otp_expiry = db.Column(db.DateTime)  # NEW: OTP expiry time
     comments = db.relationship('Comment', backref='author', lazy=True)
 
 class Article(db.Model):
@@ -91,6 +129,7 @@ class Article(db.Model):
 class CommunityReport(db.Model):
     id = db.Column(db.Integer, primary_key=True)
     reporter_name = db.Column(db.String(100), nullable=False)
+    user_id = db.Column(db.Integer, db.ForeignKey('user.id'), nullable=True)  # NEW: link to user
     category = db.Column(db.String(50), nullable=False)
     title = db.Column(db.String(100), nullable=False)
     location = db.Column(db.String(100), nullable=False)
@@ -99,15 +138,13 @@ class CommunityReport(db.Model):
     is_approved = db.Column(db.Boolean, default=False)
     date_submitted = db.Column(db.DateTime, default=datetime.utcnow)
 
-
 class Notification(db.Model):
     id = db.Column(db.Integer, primary_key=True)
-    user_id = db.Column(db.Integer, db.ForeignKey('user.id'), nullable=False)
+    user_id = db.Column(db.Integer, db.ForeignKey('user.id'), nullable=False, index=True)  # index added
     message = db.Column(db.String(255), nullable=False)
     link = db.Column(db.String(255))
     is_read = db.Column(db.Boolean, default=False)
     timestamp = db.Column(db.DateTime, default=datetime.utcnow)
-
     user = db.relationship('User', backref=db.backref('notifications', lazy=True))
 
 class Comment(db.Model):
@@ -115,8 +152,8 @@ class Comment(db.Model):
     body = db.Column(db.Text, nullable=False)
     date_posted = db.Column(db.DateTime, default=datetime.utcnow)
     likes = db.Column(db.Integer, default=0)
-    article_id = db.Column(db.Integer, db.ForeignKey('article.id'), nullable=False)
-    user_id = db.Column(db.Integer, db.ForeignKey('user.id'), nullable=False)
+    article_id = db.Column(db.Integer, db.ForeignKey('article.id'), nullable=False, index=True)  # index
+    user_id = db.Column(db.Integer, db.ForeignKey('user.id'), nullable=False, index=True)    # index
     parent_id = db.Column(db.Integer, db.ForeignKey('comment.id'))
     replies = db.relationship('Comment', backref=db.backref('parent', remote_side=[id]), lazy=True)
 
@@ -133,82 +170,82 @@ def google_login():
 
 @app.route('/login/google/callback')
 def google_callback():
-
     token = google.authorize_access_token()
     user_info = token['userinfo']
-
     email = user_info['email']
     name = user_info['name']
 
     user = User.query.filter_by(email=email).first()
-
     if not user:
         user = User(
             fullname=name,
             email=email,
-            password='google_auth',
+            password='google_auth',  # placeholder, never used for Google login
             is_verified=True
         )
-
         db.session.add(user)
         db.session.commit()
 
     session['user_id'] = user.id
     session['user_name'] = user.fullname
     session['is_admin'] = user.is_admin
-
     return redirect(url_for('home'))
 
+# Context processor for notification count
 @app.context_processor
 def inject_notifications():
     if 'user_id' in session:
         unread_count = Notification.query.filter_by(
-            user_id=session['user_id'], 
+            user_id=session['user_id'],
             is_read=False
         ).count()
         return dict(unread_count=unread_count)
     return dict(unread_count=0)
 
+# Context processor for latest articles (renamed to avoid shadowing)
+@app.context_processor
+def inject_latest_articles():
+    latest_articles = Article.query.order_by(
+        Article.date_posted.desc()
+    ).limit(5).all()
+    return dict(latest_articles=latest_articles)
+
 @app.route('/notifications')
 def notifications():
     if not session.get('user_id'):
         return redirect(url_for('login'))
-    
-    user_notifications = Notification.query.filter_by(user_id=session['user_id']).order_by(Notification.timestamp.desc()).all()
-    
-    # Mark all as read when they view the page
-    unread = Notification.query.filter_by(user_id=session['user_id'], is_read=False).all()
+    user_notifications = Notification.query.filter_by(
+        user_id=session['user_id']
+    ).order_by(Notification.timestamp.desc()).all()
+    # Mark all as read
+    unread = Notification.query.filter_by(
+        user_id=session['user_id'],
+        is_read=False
+    ).all()
     for n in unread:
         n.is_read = True
     db.session.commit()
-    
     return render_template('notifications.html', user_notifications=user_notifications)
 
 @app.route('/admin/approve-report/<int:report_id>')
 def approve_report(report_id):
-    if not session.get('is_admin'): 
+    if not session.get('is_admin'):
         return redirect(url_for('login'))
-    
     report = CommunityReport.query.get_or_404(report_id)
     report.is_approved = True
-    
-    # --- NEW: NOTIFICATION LOGIC ---
-    # Try to find a registered user whose name matches the report
-    user = User.query.filter_by(fullname=report.reporter_name).first()
-    
-    if user:
+
+    # Notify the reporter if they are a registered user (by user_id)
+    if report.user_id:
         try:
-            new_notif = Notification(
-                user_id=user.id,
+            notif = Notification(
+                user_id=report.user_id,
                 message=f"Your report '{report.title}' has been approved and is now live!",
                 link=url_for('community_reporter'),
                 is_read=False
             )
-            db.session.add(new_notif)
+            db.session.add(notif)
         except Exception as e:
-            print(f"Notification error: {e}") 
-            # We don't flash an error here so the approval still finishes
-    # -------------------------------
+            app.logger.error(f"Failed to create notification: {e}")
 
     db.session.commit()
     flash("Report approved and is now live!", "success")
@@ -216,7 +253,8 @@ def approve_report(report_id):
 
 @app.route('/admin/delete-report/<int:report_id>')
 def delete_report(report_id):
-    if not session.get('is_admin'): return redirect(url_for('login'))
+    if not session.get('is_admin'):
+        return redirect(url_for('login'))
     report = CommunityReport.query.get_or_404(report_id)
     db.session.delete(report)
     db.session.commit()
@@ -224,109 +262,154 @@ def delete_report(report_id):
     return redirect(url_for('admin_dashboard'))
 
 @app.route('/community-reporter', methods=['GET', 'POST'])
+@csrf_protect
 def community_reporter():
     if request.method == 'POST':
-
         reporter_name = request.form.get('reporter_name')
         category = request.form.get('category')
         title = request.form.get('title')
         location = request.form.get('location')
         description = request.form.get('description')
-
         file = request.files.get('report_file')
 
+        # If user is logged in, capture their user_id
+        user_id = session.get('user_id', None)
+
         file_url = None
-
         if file and file.filename != '':
-
             filename = file.filename.lower()
-
             if filename.endswith(('.mp4', '.mov', '.avi', '.mkv')):
                 res_type = "video"
-
             elif filename.endswith(('.jpg', '.jpeg', '.png', '.gif', '.webp')):
                 res_type = "image"
-
             else:
                 res_type = "raw"
-
             try:
-                upload_result = cloudinary.uploader.upload(
-                    file,
-                    resource_type=res_type
-                )
-
+                upload_result = cloudinary.uploader.upload(file, resource_type=res_type)
                 file_url = upload_result.get('secure_url')
-
             except Exception as e:
-                print("CLOUDINARY ERROR:", e)
-                flash("File upload failed.", "danger")
+                app.logger.error(f"Cloudinary upload failed: {e}")
+                flash(f"File upload failed: {e}", "danger")
+                # Continue without file – user intentionally chose to upload, so we stop
+                return redirect(url_for('community_reporter'))
 
-        try:
-            new_report = CommunityReport(
-                reporter_name=reporter_name,
-                category=category,
-                title=title,
-                location=location,
-                description=description,
-                file_path=file_url
-            )
-
-            db.session.add(new_report)
-            db.session.commit()
-
-            flash("Report submitted successfully!", "success")
-
-        except Exception as e:
-            db.session.rollback()
-            print("DATABASE ERROR:", e)
-            flash("Database error occurred.", "danger")
-
+        new_report = CommunityReport(
+            reporter_name=reporter_name,
+            user_id=user_id,
+            category=category,
+            title=title,
+            location=location,
+            description=description,
+            file_path=file_url
+        )
+        db.session.add(new_report)
+        db.session.commit()
+        flash("Report submitted successfully!", "success")
         return redirect(url_for('community_reporter'))
 
-    reports = CommunityReport.query.filter_by(
-        is_approved=True
-    ).order_by(
-        CommunityReport.date_submitted.desc()
-    ).all()
-
-    return render_template(
-        'community_reporter.html',
-        reports=reports
-    )
+    reports = CommunityReport.query.filter_by(is_approved=True)\
+        .order_by(CommunityReport.date_submitted.desc()).all()
+    return render_template('community_reporter.html', reports=reports)
 
 @app.route('/register', methods=['GET', 'POST'])
+@csrf_protect
 def register():
     if request.method == 'POST':
         email = request.form.get('email')
         if User.query.filter_by(email=email).first():
             flash("Email already registered", "danger")
             return redirect(url_for('register'))
-        
+
         otp = ''.join(random.choices(string.digits, k=6))
+        otp_expiry = datetime.utcnow() + timedelta(minutes=10)  # OTP valid for 10 minutes
         hashed_pw = generate_password_hash(request.form.get('password'))
         new_user = User(
             fullname=request.form.get('fullname'),
             email=email,
             password=hashed_pw,
-            otp_code=otp
+            otp_code=otp,
+            otp_expiry=otp_expiry
         )
         db.session.add(new_user)
         db.session.commit()
-        
+
+        # Send verification email
         try:
-            msg = Message('Verify your Kilgoris News Account', sender=app.config['MAIL_USERNAME'], recipients=[email])
-            msg.body = f"Your verification code is: {otp}"
+            msg = Message(
+                'Verify your Kilgoris News Account',
+                sender=app.config['MAIL_USERNAME'],
+                recipients=[email]
+            )
+            msg.body = f"Your verification code is: {otp} (expires in 10 minutes)"
             mail.send(msg)
             session['verify_email'] = email
             return redirect(url_for('verify'))
-        except:
-            flash("Account created, but email failed to send.", "warning")
-            return redirect(url_for('login'))
-            
+        except Exception as e:
+            app.logger.error(f"Failed to send verification email: {e}")
+            flash("Account created, but verification email could not be sent. "
+                  "Please request a new code on the verification page.", "warning")
+            # Still redirect to verify page so user can request a new code
+            session['verify_email'] = email
+            return redirect(url_for('verify'))
+
     return render_template('register.html')
 
+@app.route('/verify', methods=['GET', 'POST'])
+@csrf_protect
+def verify():
+    if request.method == 'POST':
+        user = User.query.filter_by(email=session.get('verify_email')).first()
+        if not user:
+            flash("No account found. Please register again.", "danger")
+            return redirect(url_for('register'))
+
+        if user.otp_expiry and datetime.utcnow() > user.otp_expiry:
+            flash("Verification code has expired. Request a new one below.", "warning")
+            return render_template('verify.html', resend=True)
+
+        if user.otp_code == request.form.get('otp'):
+            user.is_verified = True
+            user.otp_code = None
+            user.otp_expiry = None
+            db.session.commit()
+            session.pop('verify_email', None)
+            flash("Email verified! You can now login.", "success")
+            return redirect(url_for('login'))
+        flash("Invalid code", "danger")
+    return render_template('verify.html', resend=False)
+
+@app.route('/resend_otp', methods=['POST'])
+@csrf_protect
+def resend_otp():
+    email = session.get('verify_email')
+    if not email:
+        flash("Session expired. Please register again.", "danger")
+        return redirect(url_for('register'))
+    user = User.query.filter_by(email=email).first()
+    if not user:
+        flash("User not found.", "danger")
+        return redirect(url_for('register'))
+    # Generate new OTP
+    new_otp = ''.join(random.choices(string.digits, k=6))
+    user.otp_code = new_otp
+    user.otp_expiry = datetime.utcnow() + timedelta(minutes=10)
+    db.session.commit()
+    try:
+        msg = Message(
+            'New Verification Code - Kilgoris News',
+            sender=app.config['MAIL_USERNAME'],
+            recipients=[email]
+        )
+        msg.body = f"Your new verification code is: {new_otp} (valid for 10 minutes)"
+        mail.send(msg)
+        flash("A new code has been sent to your email.", "info")
+    except Exception as e:
+        app.logger.error(f"Failed to resend OTP: {e}")
+        flash("Could not send email. Please try again later.", "danger")
+    return redirect(url_for('verify'))
+
 @app.route('/forgot_password', methods=['GET', 'POST'])
+@csrf_protect
 def forgot_password():
     if request.method == 'POST':
         email = request.form.get('email')
@@ -334,42 +417,44 @@ def forgot_password():
         if user:
             token = s.dumps(email, salt='password-reset-salt')
             link = url_for('reset_password', token=token, _external=True)
-            msg = Message('Password Reset Request - Kilgoris News', sender=app.config['MAIL_USERNAME'], recipients=[email])
+            msg = Message(
+                'Password Reset Request - Kilgoris News',
+                sender=app.config['MAIL_USERNAME'],
+                recipients=[email]
+            )
             msg.body = f'To reset your password, visit: {link}'
-            mail.send(msg)
-            flash('Reset link sent to your email.', 'info')
+            try:
+                mail.send(msg)
+                flash('Reset link sent to your email.', 'info')
+            except Exception as e:
+                app.logger.error(f"Failed to send reset email: {e}")
+                flash("Could not send email. Please try again later.", "danger")
             return redirect(url_for('login'))
         flash('Email not found.', 'danger')
     return render_template('forgot_password.html')
 
 @app.route('/reset_password/<token>', methods=['GET', 'POST'])
+@csrf_protect
 def reset_password(token):
     try:
         email = s.loads(token, salt='password-reset-salt', max_age=1800)
-    except:
+    except Exception:
         flash('Link expired or invalid.', 'danger')
         return redirect(url_for('forgot_password'))
+    user = User.query.filter_by(email=email).first()
+    if not user:
+        flash('User not found. Please register first.', 'danger')
+        return redirect(url_for('register'))
     if request.method == 'POST':
-        user = User.query.filter_by(email=email).first()
-        user.password = generate_password_hash(request.form.get('password'))
+        new_password = request.form.get('password')
+        user.password = generate_password_hash(new_password)
         db.session.commit()
         flash('Password updated! You can now login.', 'success')
         return redirect(url_for('login'))
-    return render_template('reset_token.html')
-
-@app.route('/verify', methods=['GET', 'POST'])
-def verify():
-    if request.method == 'POST':
-        user = User.query.filter_by(email=session.get('verify_email')).first()
-        if user and user.otp_code == request.form.get('otp'):
-            user.is_verified = True
-            db.session.commit()
-            flash("Email verified! You can now login.", "success")
-            return redirect(url_for('login'))
-        flash("Invalid code", "danger")
-    return render_template('verify.html')
+    return render_template('reset_token.html', token=token)
 
 @app.route('/admin/post', methods=['GET', 'POST'])
+@csrf_protect
 def create_article():
     if not session.get('is_admin'):
         flash("Unauthorized access", "danger")
@@ -382,10 +467,9 @@ def create_article():
             file.seek(0)
             if file.filename.lower().endswith(('.mp4', '.mov', '.avi', '.mkv')):
                 is_video = True
-            
             try:
                 upload_result = cloudinary.uploader.upload(
-                    file, 
+                    file,
                     resource_type="video" if is_video else "image",
                     transformation=[
                         {'width': 800, 'height': 500, 'crop': 'fill', 'gravity': 'auto'}
@@ -393,15 +477,15 @@ def create_article():
                 )
                 file_url = upload_result.get('secure_url')
             except Exception as e:
-                print(f"CLOUDINARY ERROR: {str(e)}")
-                flash(f"Upload failed: {str(e)}", "danger")
+                app.logger.error(f"Cloudinary upload error: {e}")
+                flash(f"Upload failed: {e}", "danger")
                 return redirect(url_for('create_article'))
 
         new_art = Article(
-            title=request.form.get('title'), 
-            content=request.form.get('content'), 
-            category=request.form.get('category'), 
-            file_path=file_url, 
+            title=request.form.get('title'),
+            content=request.form.get('content'),
+            category=request.form.get('category'),
+            file_path=file_url,
             is_video=is_video
         )
         db.session.add(new_art)
@@ -412,31 +496,29 @@ def create_article():
             "image": new_art.file_path,
             "url": url_for('article', article_id=new_art.id)
         }
-
         socketio.emit('new_article', data)
         flash("Article Published Successfully!", "success")
         return redirect(url_for('home'))
     return render_template('create_article.html')
 
 @app.route('/login', methods=['GET', 'POST'])
+@csrf_protect
 def login():
     if request.method == 'POST':
-        user = User.query.filter_by(email=request.form.get('email')).first()
-        if user and check_password_hash(user.password, request.form.get('password')):
+        email = request.form.get('email')
+        password = request.form.get('password')
+        user = User.query.filter_by(email=email).first()
+        if user and check_password_hash(user.password, password):
+            if not user.is_verified:
+                flash("Please verify your email before logging in.", "warning")
+                session['verify_email'] = user.email
+                return redirect(url_for('verify'))
             session['user_id'] = user.id
             session['user_name'] = user.fullname
             session['is_admin'] = user.is_admin
             return redirect(url_for('home'))
-        flash("Login failed", "danger")
+        flash("Invalid email or password.", "danger")
     return render_template('login.html')
-
-@app.context_processor
-def inject_articles():
-    latest_articles = Article.query.order_by(
-        Article.date_posted.desc()
-    ).limit(5).all()
-
-    return dict(articles=latest_articles)
 
 @app.route('/logout')
 def logout():
@@ -450,29 +532,34 @@ def support():
 @app.route('/search')
 def search():
     query = request.args.get('q')
-    results = Article.query.filter((Article.title.contains(query)) | (Article.content.contains(query))).all() if query else []
-    return render_template('index.html', articles=results, category_title=f"SEARCH RESULTS FOR: {query}")
+    if query:
+        results = Article.query.filter(
+            (Article.title.contains(query)) | (Article.content.contains(query))
+        ).order_by(Article.date_posted.desc()).all()
+    else:
+        results = []
+    return render_template('index.html', articles=results,
+                           category_title=f"SEARCH RESULTS FOR: {query}")
 
 @app.route('/category/<string:cat_name>')
 def category(cat_name):
-    category_articles = Article.query.filter_by(category=cat_name).order_by(Article.date_posted.desc()).all()
-    return render_template('index.html', articles=category_articles, category_title=cat_name.upper())
+    category_articles = Article.query.filter_by(category=cat_name)\
+        .order_by(Article.date_posted.desc()).all()
+    return render_template('index.html', articles=category_articles,
+                           category_title=cat_name.upper())
 
 @app.route('/admin')
 def admin_dashboard():
-    if not session.get('is_admin'): 
+    if not session.get('is_admin'):
         return redirect(url_for('login'))
-    
     articles = Article.query.order_by(Article.date_posted.desc()).all()
-    
-    # NEW: Fetch reports so the HTML can see them
     reports = CommunityReport.query.order_by(CommunityReport.date_submitted.desc()).all()
-    
     return render_template('admin_dashboard.html', articles=articles, reports=reports)
 
 @app.route('/admin/delete/<int:article_id>')
 def delete_article(article_id):
-    if not session.get('is_admin'): return redirect(url_for('home'))
+    if not session.get('is_admin'):
+        return redirect(url_for('home'))
     art = Article.query.get_or_404(article_id)
     db.session.delete(art)
     db.session.commit()
@@ -484,22 +571,30 @@ def donate():
     return render_template('donate.html')
 
 @app.route('/article/<int:article_id>', methods=['GET', 'POST'])
+@csrf_protect
 def article(article_id):
     art = Article.query.get_or_404(article_id)
     if request.method == 'POST':
-        if not session.get('user_id'): return redirect(url_for('login'))
-        comment = Comment(body=request.form.get('body'), article_id=article_id, user_id=session['user_id'], parent_id=request.form.get('parent_id'))
+        if not session.get('user_id'):
+            return redirect(url_for('login'))
+        comment = Comment(
+            body=request.form.get('body'),
+            article_id=article_id,
+            user_id=session['user_id'],
+            parent_id=request.form.get('parent_id')
+        )
         db.session.add(comment)
         db.session.commit()
+        flash("Comment posted.", "success")
         return redirect(url_for('article', article_id=article_id))
     return render_template('article.html', article=art)
 
-# --- NEW ROUTE FOR PRIVACY POLICY ---
 @app.route('/privacy-policy')
 def privacy_policy():
     return render_template('privacy.html')
 
-with app.app_context(): # WARNING: This will delete all existing data. Use with caution.
+# Initialize database tables (safe – no data deletion)
+with app.app_context():
     db.create_all()
 
 if __name__ == '__main__':
