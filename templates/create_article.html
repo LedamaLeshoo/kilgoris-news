@@ -6,23 +6,21 @@
         <h2 style="color: var(--navy); font-weight: 800; text-transform: uppercase;">Publish New Article</h2>
         <p style="margin-bottom: 25px; color: #666;">Post the latest updates to Kilgoris News</p>
         
-        <!-- enctype is essential for file uploads -->
         <form action="/admin/post" method="POST" enctype="multipart/form-data">
             
-            <!-- 1. ARTICLE TITLE -->
+            <input type="hidden" name="_csrf_token" value="{{ csrf_token() }}">
+            
             <div class="form-group" style="margin-bottom: 20px;">
                 <label style="display: block; font-weight: bold; margin-bottom: 8px;">Article Title</label>
                 <input type="text" name="title" required placeholder="Enter a catchy headline" style="width: 100%; padding: 12px; border: 1px solid #ddd; border-radius: 6px; font-size: 16px;">
             </div>
 
-            <!-- 2. FILE UPLOAD (Image or Video) -->
             <div class="form-group" style="margin-bottom: 20px;">
                 <label style="display: block; font-weight: bold; margin-bottom: 8px;">Article Media (Image or Video)</label>
                 <input type="file" name="file" accept="image/*,video/*" style="padding: 10px 0; display: block; width: 100%;">
                 <small style="color: #666;">Select a high-quality photo or an MP4 video for the story.</small>
             </div>
             
-            <!-- 3. CATEGORY DROPDOWN (Now Manually Added) -->
             <div class="form-group" style="margin-bottom: 20px;">
                 <label style="display: block; font-weight: bold; margin-bottom: 8px;">Category</label>
                 <select name="category" required style="width: 100%; padding: 12px; border: 1px solid #ddd; border-radius: 6px; font-size: 16px; background-color: white;">
@@ -37,13 +35,11 @@
                 </select>
             </div>
 
-            <!-- 4. CONTENT AREA -->
             <div class="form-group" style="margin-bottom: 20px;">
                 <label style="display: block; font-weight: bold; margin-bottom: 8px;">Content</label>
                 <textarea name="content" rows="10" required placeholder="Write your news story here..." style="width: 100%; padding: 15px; border: 1px solid #ddd; border-radius: 6px; font-family: inherit; font-size: 16px; resize: vertical;"></textarea>
             </div>
 
-            <!-- 5. PUBLISH BUTTON -->
             <button type="submit" class="subscribe-btn" style="width: 100%; border: none; padding: 15px; font-size: 18px; font-weight: bold; cursor: pointer; background-color: var(--navy); color: white; border-radius: 6px; transition: background 0.3s;">
                 PUBLISH ARTICLE
             </button>

@@ -4,8 +4,18 @@
     <h2>Check your Email</h2>
     <p>We sent a 6-digit code to verify your account.</p>
     <form method="POST">
-        <input type="text" name="otp" maxlength="6" style="font-size: 2rem; text-align: center; letter-spacing: 10px; margin: 20px 0;" required>
+        <input type="hidden" name="_csrf_token" value="{{ csrf_token() }}">
+        <input type="text" name="otp" maxlength="6" 
+               style="font-size: 2rem; text-align: center; letter-spacing: 10px; margin: 20px 0; width: 150px;" required>
         <button type="submit" class="btn" style="width: 100%;">Verify & Complete</button>
+    </form>
+
+    {% if resend %}
+        <p style="color: red;">Code expired or invalid. Request a new one below.</p>
+    {% endif %}
+    <form action="{{ url_for('resend_otp') }}" method="POST" style="margin-top: 20px;">
+        <input type="hidden" name="_csrf_token" value="{{ csrf_token() }}">
+        <button type="submit" class="btn" style="background: #888;">Resend Code</button>
     </form>
 </div>
 {% endblock %}

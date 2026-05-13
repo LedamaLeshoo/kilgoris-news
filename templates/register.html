@@ -3,6 +3,7 @@
 <div style="max-width: 500px; margin: 60px auto; background: white; padding: 40px; border-radius: 12px;">
     <h2>Register</h2>
     <form method="POST">
+        <input type="hidden" name="_csrf_token" value="{{ csrf_token() }}">
         <input type="text" name="fullname" placeholder="Full Name" required class="form-input">
         <input type="email" name="email" placeholder="Email" required class="form-input">
         <input type="password" name="password" id="pw" placeholder="Password" required class="form-input">

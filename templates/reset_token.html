@@ -6,6 +6,7 @@
         <p>Create a strong new password for your account.</p>
         
         <form method="POST">
+            <input type="hidden" name="_csrf_token" value="{{ csrf_token() }}">
             <div class="form-group">
                 <label>New Password</label>
                 <input type="password" name="password" required placeholder="Min 8 characters">

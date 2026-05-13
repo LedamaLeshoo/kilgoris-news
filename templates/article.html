@@ -1,6 +1,15 @@
 {% extends 'base.html' %}
 {% block content %}
 <article style="max-width: 900px; width: 95%; margin: 0 auto; padding: 20px 0; overflow-x: hidden;">
+    <!-- Flash messages -->
+    {% with messages = get_flashed_messages(with_categories=true) %}
+        {% if messages %}
+            {% for category, message in messages %}
+                <div class="flash {{ category }}" style="padding: 10px; margin-bottom: 15px; border-radius: 4px; background: #e8f0fe; color: #333;">{{ message }}</div>
+            {% endfor %}
+        {% endif %}
+    {% endwith %}
+
     <h1 style="font-size: clamp(1.8rem, 8vw, 2.5rem); margin-bottom: 20px;">{{ article.title }}</h1>
     <p style="color: #666; margin-bottom: 20px;">Published on {{ article.date_posted.strftime('%B %d, %Y %H:%M:%S') }}</p>
 
@@ -16,7 +25,7 @@
         {{ article.content }}
     </div>
 
-    <!-- Social Share Section (Now Functional) -->
+    <!-- Social Share Section -->
     <div style="margin-top: 40px; padding: 20px; border-top: 1px solid #eee; display: flex; flex-wrap: wrap; gap: 20px; align-items: center;">
         <strong>Share:</strong>
         <a href="https://api.whatsapp.com/send?text=Read this on Kilgoris News: {{ article.title }} - {{ request.url }}" target="_blank" style="color: #25D366; font-size: 1.5rem;"><i class="fab fa-whatsapp"></i></a>
@@ -31,6 +40,7 @@
         
         {% if session.get('user_id') %}
             <form method="POST" style="margin-top: 20px;">
+                <input type="hidden" name="_csrf_token" value="{{ csrf_token() }}">
                 <textarea name="body" placeholder="Join the conversation..." required style="width: 100%; padding: 15px; border-radius: 8px; border: 1px solid #ddd;"></textarea>
                 <button type="submit" class="btn" style="margin-top: 10px;">Post Comment</button>
             </form>
@@ -64,6 +74,7 @@
                     {% endfor %}
 
                     <form id="reply-{{comment.id}}" method="POST" style="display:none; margin-top: 15px;">
+                        <input type="hidden" name="_csrf_token" value="{{ csrf_token() }}">
                         <input type="hidden" name="parent_id" value="{{ comment.id }}">
                         <textarea name="body" placeholder="Write a reply..." required style="width: 100%; padding: 10px; border-radius: 6px; border: 1px solid #eee;"></textarea>
                         <button type="submit" class="btn" style="padding: 5px 15px; margin-top: 5px;">Reply</button>
