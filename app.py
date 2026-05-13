@@ -13,7 +13,12 @@ from authlib.integrations.flask_client import OAuth
 from flask_socketio import SocketIO, emit
 
 app = Flask(__name__)
-socketio = SocketIO(app, cors_allowed_origins="*")
+# Update your app.py SocketIO initialization
+socketio = SocketIO(app, 
+    cors_allowed_origins="*", 
+    ping_timeout=60, 
+    ping_interval=25
+)
 app.config['SECRET_KEY'] = os.environ.get(
     'SECRET_KEY',
     'kilgoris_news_professional_2026'
