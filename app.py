@@ -16,6 +16,8 @@ from itsdangerous import URLSafeTimedSerializer
 from authlib.integrations.flask_client import OAuth
 from flask_socketio import SocketIO, emit
 from functools import wraps
+from flask import Flask, render_template, request, redirect, url_for, session, flash, json
+
 
 # --- APP INITIALIZATION ---
 app = Flask(__name__)
@@ -234,7 +236,7 @@ def approve_report(report_id):
     report = CommunityReport.query.get_or_404(report_id)
     report.is_approved = True
 
-    # Notify the reporter if they are a registered user (by user_id)
+    # If the reporter is a registered user, notify them in real time
     if report.user_id:
         try:
             notif = Notification(
@@ -244,10 +246,36 @@ def approve_report(report_id):
                 is_read=False
             )
             db.session.add(notif)
-        except Exception as e:
-            app.logger.error(f"Failed to create notification: {e}")
+            db.session.commit()  # commit to get notif.id if needed
 
-    db.session.commit()
+            # Emit live notification update
+            unread_count = Notification.query.filter_by(
+                user_id=report.user_id, is_read=False
+            ).count()
+            room = f"user_{report.user_id}"
+            socketio.emit('notification_update', {
+                'message': notif.message,
+                'link': notif.link,
+                'unread_count': unread_count
+            }, room=room)
+        except Exception as e:
+            db.session.rollback()
+            app.logger.error(f"Failed to create notification: {e}")
+    else:
+        db.session.commit()
+
+    # Also emit to community reports feed (live update of approved reports)
+    socketio.emit('report_approved', {
+        'id': report.id,
+        'reporter_name': report.reporter_name,
+        'category': report.category,
+        'title': report.title,
+        'location': report.location,
+        'description': report.description,
+        'file_path': report.file_path,
+        'date_submitted': report.date_submitted.strftime('%Y-%m-%d %H:%M')
+    }, room='community_reports')
+
     flash("Report approved and is now live!", "success")
     return redirect(url_for('admin_dashboard'))
 
@@ -490,11 +518,14 @@ def create_article():
         )
         db.session.add(new_art)
         db.session.commit()
-        data = {
+                data = {
+            "id": new_art.id,
             "title": new_art.title,
-            "category": new_art.category,
+            "category": new_art.category or 'Latest Update',
             "image": new_art.file_path,
-            "url": url_for('article', article_id=new_art.id)
+            "is_video": new_art.is_video,
+            "url": url_for('article', article_id=new_art.id),
+            "excerpt": new_art.content[:100] + '...'
         }
         socketio.emit('new_article', data)
         flash("Article Published Successfully!", "success")
@@ -577,14 +608,28 @@ def article(article_id):
     if request.method == 'POST':
         if not session.get('user_id'):
             return redirect(url_for('login'))
+        body = request.form.get('body')
+        parent_id = request.form.get('parent_id')
         comment = Comment(
-            body=request.form.get('body'),
+            body=body,
             article_id=article_id,
             user_id=session['user_id'],
-            parent_id=request.form.get('parent_id')
+            parent_id=parent_id
         )
         db.session.add(comment)
         db.session.commit()
+
+        # Emit real‑time comment to all viewers of this article
+        commenter_name = User.query.get(session['user_id']).fullname
+        socketio.emit('new_comment', {
+            'id': comment.id,
+            'body': comment.body,
+            'author': commenter_name,
+            'parent_id': parent_id or 0,
+            'date_posted': comment.date_posted.strftime('%b %d, %H:%M'),
+            'article_id': article_id
+        }, room=f"article_{article_id}")
+
         flash("Comment posted.", "success")
         return redirect(url_for('article', article_id=article_id))
     return render_template('article.html', article=art)
@@ -592,6 +637,39 @@ def article(article_id):
 @app.route('/privacy-policy')
 def privacy_policy():
     return render_template('privacy.html')
+
+# --------------------- SOCKET.IO EVENTS ---------------------
+@socketio.on('connect')
+def handle_connect():
+    app.logger.info(f"Client connected: {request.sid}")
+
+@socketio.on('disconnect')
+def handle_disconnect():
+    app.logger.info(f"Client disconnected: {request.sid}")
+
+@socketio.on('join_user_room')
+def handle_join_user_room(data):
+    """Join a user to their personal notification room."""
+    user_id = session.get('user_id')
+    if user_id:
+        room = f"user_{user_id}"
+        socketio.server.enter_room(request.sid, room, namespace='/')
+        app.logger.info(f"User {user_id} joined room {room}")
+
+@socketio.on('join_article_room')
+def handle_join_article_room(data):
+    """Join a user to an article's comment room."""
+    article_id = data.get('article_id')
+    if article_id:
+        room = f"article_{article_id}"
+        socketio.server.enter_room(request.sid, room, namespace='/')
+        app.logger.info(f"Client joined article room {room}")
+
+@socketio.on('join_community_room')
+def handle_join_community_room():
+    """Join the community reports feed room."""
+    socketio.server.enter_room(request.sid, 'community_reports', namespace='/')
+    app.logger.info("Client joined community_reports room")
 
 # Initialize database tables (safe – no data deletion)
 with app.app_context():
