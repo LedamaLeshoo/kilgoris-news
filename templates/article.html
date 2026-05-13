@@ -101,4 +101,48 @@ function toggleLike(element) {
     }
 }
 </script>
+
+<script>
+// Join the article room for real-time comments
+const articleId = {{ article.id | tojson }};
+if (typeof socket !== 'undefined') {
+    socket.emit('join_article_room', { article_id: articleId });
+
+    socket.on('new_comment', function(comment) {
+        // Only process comments for this article
+        if (comment.article_id != articleId) return;
+
+    // Select the comments container
+    const commentsDiv = document.querySelector('section div[style*="margin-top: 40px"]');
+    if (!commentsDiv) return;
+
+    // Create comment HTML (top-level only – replies require page reload for now)
+    if (comment.parent_id == 0) {
+        const newComment = document.createElement('div');
+        newComment.style.cssText = "background: white; padding: 20px; border-radius: 8px; margin-bottom: 15px; border-left: 4px solid var(--primary); box-shadow: 0 2px 5px rgba(0,0,0,0.05);";
+        newComment.innerHTML = `
+            <strong>${comment.author}</strong>
+            <p style="margin: 10px 0;">${comment.body}</p>
+            <div style="display: flex; gap: 20px; font-size: 0.9rem; color: #666;">
+                <span style="cursor:pointer;" onclick="toggleLike(this)">
+                    <i class="far fa-thumbs-up"></i> <span class="like-count">0</span> Likes
+                </span>
+                <span style="cursor:pointer;" onclick="this.parentElement.parentElement.querySelector('.reply-form').style.display='block'">
+                    <i class="far fa-comment"></i> Reply
+                </span>
+            </div>
+            <div class="reply-form" style="display:none; margin-top:15px;">
+                <form method="POST" action="{{ url_for('article', article_id=article.id) }}">
+                    <input type="hidden" name="_csrf_token" value="{{ csrf_token() }}">
+                    <input type="hidden" name="parent_id" value="${comment.id}">
+                    <textarea name="body" placeholder="Write a reply..." required style="width:100%; padding:10px; border-radius:6px; border:1px solid #eee;"></textarea>
+                    <button type="submit" class="btn" style="padding:5px 15px; margin-top:5px;">Reply</button>
+                </form>
+            </div>
+        `;
+        // Insert at the top of the comments list
+        commentsDiv.prepend(newComment);
+    }
+});
+</script>
 {% endblock %}

@@ -94,6 +94,42 @@
     </div>
 </div>
 
+<script>
+// Join community reports room
+socket.emit('join_community_room');
+
+socket.on('report_approved', function(report) {
+    const feed = document.querySelector('.reports-feed');
+    if (!feed) return;
+
+    // Create new report card
+    const card = document.createElement('div');
+    card.style.cssText = "background: white; padding: 20px; border-radius: 8px; margin-bottom: 20px; border-left: 5px solid var(--red); box-shadow: 0 2px 10px rgba(0,0,0,0.05);";
+    let mediaHtml = '';
+    if (report.file_path) {
+        if (report.file_path.endsWith('.mp4') || report.file_path.endsWith('.mov') || report.file_path.endsWith('.avi') || report.file_path.endsWith('.mkv')) {
+            mediaHtml = `<video controls style="width:100%; margin-top:10px; border-radius:8px;"><source src="${report.file_path}" type="video/mp4"></video>`;
+        } else if (report.file_path.match(/\.(jpg|jpeg|png|gif|webp)$/i)) {
+            mediaHtml = `<img src="${report.file_path}" style="width:100%; margin-top:10px; border-radius:8px;">`;
+        } else {
+            mediaHtml = `<a href="${report.file_path}" target="_blank" style="display:inline-block; margin-top:10px; color: var(--red); font-weight:bold;"><i class="fas fa-file"></i> View Document</a>`;
+        }
+    }
+    card.innerHTML = `
+        <span style="font-size: 0.8rem; font-weight: bold; color: var(--red); text-transform: uppercase;">${report.category}</span>
+        <h3 style="margin: 5px 0;">${report.title}</h3>
+        <p style="font-size: 0.95rem; color: #444;">${report.description}</p>
+        ${mediaHtml}
+        <div style="margin-top: 10px; font-size: 0.8rem; color: #888;">
+            <i class="fas fa-map-marker-alt"></i> ${report.location} | 
+            <i class="fas fa-user"></i> By ${report.reporter_name}
+        </div>
+    `;
+    // Add to top of feed
+    feed.prepend(card);
+});
+</script>
+
 <style>
 .community-layout{
     display:grid;
