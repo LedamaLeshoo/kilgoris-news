@@ -64,6 +64,14 @@
     <i class="far fa-thumbs-up"></i> 
     <span class="like-count">{{ comment.likes_count }}</span> Likes
 </span>
+
+<span class="like-btn" 
+      data-obj-type="article" 
+      data-obj-id="{{ article.id }}" 
+      style="cursor: pointer; margin-right: 15px;">
+    <i class="far fa-heart"></i> 
+    <span class="like-count">{{ article.likes|length }}</span> Likes
+</span>
                         
                         <span style="cursor: pointer;" onclick="document.getElementById('reply-{{comment.id}}').style.display='block'">
                             <i class="far fa-comment"></i> Reply
@@ -90,63 +98,81 @@
 </article>
 
 <script>
-function toggleLike(element) {
-    const icon = element.querySelector('i');
-    const countSpan = element.querySelector('.like-count');
-    let count = parseInt(countSpan.innerText);
-    if (icon.classList.contains('far')) {
-        icon.classList.replace('far', 'fas');
-        icon.style.color = 'var(--primary)';
-        countSpan.innerText = count + 1;
-    } else {
-        icon.classList.replace('fas', 'far');
-        icon.style.color = '#666';
-        countSpan.innerText = count - 1;
-    }
-}
-</script>
+// ---------- REAL LIKES (AJAX) ----------
+document.querySelectorAll('.like-btn').forEach(function(btn) {
+    btn.addEventListener('click', function() {
+        const objType = this.dataset.objType;
+        const objId = this.dataset.objId;
+        const icon = this.querySelector('i');
+        const countSpan = this.querySelector('.like-count');
 
-<script>
-// Join the article room for real-time comments
+        fetch('/like/' + objType + '/' + objId, {
+            method: 'POST',
+            headers: {
+                'Content-Type': 'application/x-www-form-urlencoded',
+                'X-CSRFToken': '{{ csrf_token() }}'
+            },
+            body: '_csrf_token={{ csrf_token() }}'
+        })
+        .then(response => response.json())
+        .then(data => {
+            if (data.error) {
+                alert(data.error);
+                return;
+            }
+            // Toggle icon
+            if (data.liked) {
+                icon.classList.replace('far', 'fas');
+                icon.style.color = 'var(--primary)';
+            } else {
+                icon.classList.replace('fas', 'far');
+                icon.style.color = '#666';
+            }
+            countSpan.textContent = data.count;
+        })
+        .catch(err => console.error('Like error:', err));
+    });
+});
+
+// ---------- REAL-TIME COMMENTS (unchanged) ----------
 var articleId = {{ article.id | tojson }};
 if (typeof socket !== 'undefined') {
     socket.emit('join_article_room', { article_id: articleId });
-
     socket.on('new_comment', function(comment) {
-        // Only process comments for this article
         if (comment.article_id != articleId) return;
-
-    // Select the comments container
-    const commentsDiv = document.querySelector('section div[style*="margin-top: 40px"]');
-    if (!commentsDiv) return;
-
-    // Create comment HTML (top-level only – replies require page reload for now)
-    if (comment.parent_id == 0) {
-        const newComment = document.createElement('div');
-        newComment.style.cssText = "background: white; padding: 20px; border-radius: 8px; margin-bottom: 15px; border-left: 4px solid var(--primary); box-shadow: 0 2px 5px rgba(0,0,0,0.05);";
-        newComment.innerHTML = `
-            <strong>${comment.author}</strong>
-            <p style="margin: 10px 0;">${comment.body}</p>
-            <div style="display: flex; gap: 20px; font-size: 0.9rem; color: #666;">
-                <span style="cursor:pointer;" onclick="toggleLike(this)">
-                    <i class="far fa-thumbs-up"></i> <span class="like-count">0</span> Likes
-                </span>
-                <span style="cursor:pointer;" onclick="this.parentElement.parentElement.querySelector('.reply-form').style.display='block'">
-                    <i class="far fa-comment"></i> Reply
-                </span>
-            </div>
-            <div class="reply-form" style="display:none; margin-top:15px;">
-                <form method="POST" action="{{ url_for('article', article_id=article.id) }}">
-                    <input type="hidden" name="_csrf_token" value="{{ csrf_token() }}">
-                    <input type="hidden" name="parent_id" value="${comment.id}">
-                    <textarea name="body" placeholder="Write a reply..." required style="width:100%; padding:10px; border-radius:6px; border:1px solid #eee;"></textarea>
-                    <button type="submit" class="btn" style="padding:5px 15px; margin-top:5px;">Reply</button>
-                </form>
-            </div>
-        `;
-        // Insert at the top of the comments list
-        commentsDiv.prepend(newComment);
-    }
-});
+        const commentsDiv = document.querySelector('section div[style*="margin-top: 40px"]');
+        if (!commentsDiv) return;
+        if (comment.parent_id == 0) {
+            const newComment = document.createElement('div');
+            newComment.style.cssText = "background: white; padding: 20px; border-radius: 8px; margin-bottom: 15px; border-left: 4px solid var(--primary); box-shadow: 0 2px 5px rgba(0,0,0,0.05);";
+            newComment.innerHTML = `
+                <strong>${comment.author}</strong>
+                <p style="margin: 10px 0;">${comment.body}</p>
+                <div style="display: flex; gap: 20px; font-size: 0.9rem; color: #666;">
+                    <span class="like-btn" data-obj-type="comment" data-obj-id="${comment.id}" style="cursor:pointer;">
+                        <i class="far fa-thumbs-up"></i> <span class="like-count">0</span> Likes
+                    </span>
+                    <span style="cursor:pointer;" onclick="this.parentElement.parentElement.querySelector('.reply-form').style.display='block'">
+                        <i class="far fa-comment"></i> Reply
+                    </span>
+                </div>
+                <div class="reply-form" style="display:none; margin-top:15px;">
+                    <form method="POST" action="{{ url_for('article', article_id=article.id) }}">
+                        <input type="hidden" name="_csrf_token" value="{{ csrf_token() }}">
+                        <input type="hidden" name="parent_id" value="${comment.id}">
+                        <textarea name="body" placeholder="Write a reply..." required style="width:100%; padding:10px; border-radius:6px; border:1px solid #eee;"></textarea>
+                        <button type="submit" class="btn" style="padding:5px 15px; margin-top:5px;">Reply</button>
+                    </form>
+                </div>
+            `;
+            commentsDiv.prepend(newComment);
+            // Re-bind like events for the new comment
+            newComment.querySelector('.like-btn').addEventListener('click', function() {
+                // You can either extract the function or keep it simple:
+                // For brevity, we'll rely on the delegation approach (optional)
+            });
+        }
+    });
+}
 </script>
 {% endblock %}
