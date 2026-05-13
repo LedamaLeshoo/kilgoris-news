@@ -126,5 +126,9 @@ socket.on('new_article', function(data) {
     // Optional auto reload
     location.reload();
 });
+var socket = io({
+    transports: ['websocket'],
+    upgrade: false
+});
 </script>
 </html>
