@@ -57,9 +57,13 @@
                     <p style="margin: 10px 0;">{{ comment.body }}</p>
                     
                     <div style="display: flex; gap: 20px; font-size: 0.9rem; color: #666;">
-                        <span style="cursor: pointer; transition: 0.3s;" onclick="toggleLike(this)">
-                            <i class="far fa-thumbs-up"></i> <span class="like-count">0</span> Likes
-                        </span>
+                        <span class="like-btn" 
+      data-obj-type="comment" 
+      data-obj-id="{{ comment.id }}" 
+      style="cursor: pointer; transition: 0.3s;">
+    <i class="far fa-thumbs-up"></i> 
+    <span class="like-count">{{ comment.likes_count }}</span> Likes
+</span>
                         
                         <span style="cursor: pointer;" onclick="document.getElementById('reply-{{comment.id}}').style.display='block'">
                             <i class="far fa-comment"></i> Reply
@@ -104,7 +108,7 @@ function toggleLike(element) {
 
 <script>
 // Join the article room for real-time comments
-const articleId = {{ article.id | tojson }};
+var articleId = {{ article.id | tojson }};
 if (typeof socket !== 'undefined') {
     socket.emit('join_article_room', { article_id: articleId });
 
