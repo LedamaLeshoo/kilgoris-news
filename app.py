@@ -283,6 +283,13 @@ def inject_latest_articles():
     latest_articles = Article.query.order_by(Article.date_posted.desc()).limit(5).all()
     return dict(latest_articles=latest_articles)
 
+@app.context_processor
+def inject_current_user():
+    if 'user_id' in session:
+        user = User.query.get(session['user_id'])
+        return dict(current_user=user)
+    return dict(current_user=None)
+
 @app.route('/notifications')
 @login_required
 def notifications():
