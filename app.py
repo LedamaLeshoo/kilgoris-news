@@ -1,4 +1,3 @@
-# ⚡ Must be the very first lines – enable gevent async support
 from gevent import monkey
 monkey.patch_all()
 
@@ -21,20 +20,16 @@ from authlib.integrations.flask_client import OAuth
 from flask_socketio import SocketIO, emit
 from functools import wraps
 
-# --- APP INITIALIZATION ---
 app = Flask(__name__)
 
-# Secret key – MUST be set in environment, no fallback
 app.config['SECRET_KEY'] = os.environ.get('SECRET_KEY')
 if not app.config['SECRET_KEY']:
     raise RuntimeError("SECRET_KEY environment variable is not set.")
 app.secret_key = app.config['SECRET_KEY']
 
-# Logging
 logging.basicConfig(level=logging.INFO)
 app.logger.setLevel(logging.INFO)
 
-# Socket.IO
 socketio = SocketIO(
     app,
     cors_allowed_origins="*",
@@ -42,7 +37,6 @@ socketio = SocketIO(
     ping_interval=25
 )
 
-# OAuth
 oauth = OAuth(app)
 google = oauth.register(
     name='google',
@@ -52,10 +46,8 @@ google = oauth.register(
     client_kwargs={'scope': 'openid email profile'}
 )
 
-# Serializer for reset tokens
 s = URLSafeTimedSerializer(app.config['SECRET_KEY'])
 
-# --- CLOUDINARY CONFIGURATION ---
 cloudinary.config(
     cloud_name=os.environ.get('CLOUDINARY_CLOUD_NAME'),
     api_key=os.environ.get('CLOUDINARY_API_KEY'),
@@ -64,10 +56,8 @@ cloudinary.config(
 if not all([cloudinary.config().cloud_name, cloudinary.config().api_key, cloudinary.config().api_secret]):
     raise RuntimeError("Cloudinary environment variables must be set.")
 
-# --- APP CONFIG ---
 app.config['MAX_CONTENT_LENGTH'] = 50 * 1024 * 1024  # 50MB
 
-# Email config
 app.config['MAIL_SERVER'] = 'smtp.gmail.com'
 app.config['MAIL_PORT'] = 587
 app.config['MAIL_USE_TLS'] = True
@@ -75,7 +65,6 @@ app.config['MAIL_USERNAME'] = os.environ.get('MAIL_USERNAME')
 app.config['MAIL_PASSWORD'] = os.environ.get('MAIL_PASSWORD')
 mail = Mail(app)
 
-# Database
 database_url = os.environ.get('DATABASE_URL')
 if database_url and database_url.startswith("postgres://"):
     database_url = database_url.replace("postgres://", "postgresql://", 1)
@@ -83,7 +72,6 @@ app.config['SQLALCHEMY_DATABASE_URI'] = database_url or 'sqlite:///kilgoris.db'
 app.config['SQLALCHEMY_TRACK_MODIFICATIONS'] = False
 db = SQLAlchemy(app)
 
-# --- CSRF PROTECTION ---
 def generate_csrf_token():
     if '_csrf_token' not in session:
         import secrets
@@ -104,7 +92,6 @@ def csrf_protect(f):
         return f(*args, **kwargs)
     return decorated_function
 
-# --- MODELS ---
 class User(db.Model):
     id = db.Column(db.Integer, primary_key=True)
     fullname = db.Column(db.String(100), nullable=False)
@@ -188,13 +175,11 @@ class TopicFollow(db.Model):
     topic = db.Column(db.String(50), nullable=False)  # e.g., 'politics', 'business'
     timestamp = db.Column(db.DateTime, default=datetime.utcnow)
 
-# --- REPUTATION CONSTANTS ---
 REP_VERIFIED_EMAIL = 5
 REP_COMMENT_POSTED = 1
 REP_COMMENT_LIKED = 2          # given to comment owner
 REP_REPORT_APPROVED = 10
 
-# --- SOCKET.IO EVENTS ---
 @socketio.on('connect')
 def handle_connect():
     app.logger.info(f"Client connected: {request.sid}")
@@ -224,13 +209,11 @@ def handle_join_community_room():
     socketio.server.enter_room(request.sid, 'community_reports', namespace='/')
     app.logger.info("Client joined community_reports room")
 
-# --- ROUTES ---
 @app.route('/')
 def home():
     articles = Article.query.order_by(Article.date_posted.desc()).all()
     return render_template('index.html', articles=articles)
 
-# --- AUTH ---
 @app.route('/login/google')
 def google_login():
     redirect_uri = url_for('google_callback', _external=True)
@@ -284,7 +267,6 @@ def notifications():
     db.session.commit()
     return render_template('notifications.html', user_notifications=user_notifications)
 
-# --- ADMIN APPROVAL – now gives reputation & report score ---
 @app.route('/admin/approve-report/<int:report_id>')
 def approve_report(report_id):
     if not session.get('is_admin'):
@@ -292,14 +274,13 @@ def approve_report(report_id):
     report = CommunityReport.query.get_or_404(report_id)
     report.is_approved = True
 
-    # Award reporter score and reputation
     if report.user_id:
         reporter = User.query.get(report.user_id)
         if reporter:
             reporter.report_score += 1
             reporter.reputation += REP_REPORT_APPROVED
             db.session.commit()
-            # Create notification
+
             notif = Notification(
                 user_id=report.user_id,
                 message=f"Your report '{report.title}' has been approved! +{REP_REPORT_APPROVED} rep",
@@ -344,7 +325,6 @@ def delete_report(report_id):
     flash("Report deleted.", "info")
     return redirect(url_for('admin_dashboard'))
 
-# --- COMMUNITY REPORTER ---
 @app.route('/community-reporter', methods=['GET', 'POST'])
 @csrf_protect
 def community_reporter():
@@ -392,7 +372,6 @@ def community_reporter():
         .order_by(CommunityReport.date_submitted.desc()).all()
     return render_template('community_reporter.html', reports=reports)
 
-# --- REGISTRATION ---
 @app.route('/register', methods=['GET', 'POST'])
 @csrf_protect
 def register():
@@ -531,7 +510,6 @@ def reset_password(token):
         return redirect(url_for('login'))
     return render_template('reset_token.html', token=token)
 
-# --- ADMIN CREATE ARTICLE ---
 @app.route('/admin/post', methods=['GET', 'POST'])
 @csrf_protect
 def create_article():
@@ -584,7 +562,6 @@ def create_article():
         return redirect(url_for('home'))
     return render_template('create_article.html')
 
-# --- LOGIN / LOGOUT ---
 @app.route('/login', methods=['GET', 'POST'])
 @csrf_protect
 def login():
@@ -609,7 +586,6 @@ def logout():
     session.clear()
     return redirect(url_for('home'))
 
-# --- MISC PAGES ---
 @app.route('/support')
 def support():
     return render_template('support.html')
@@ -655,7 +631,6 @@ def delete_article(article_id):
 def donate():
     return render_template('donate.html')
 
-# --- ARTICLE (with comment + reputation + real-time) ---
 @app.route('/article/<int:article_id>', methods=['GET', 'POST'])
 @csrf_protect
 def article(article_id):
@@ -673,7 +648,7 @@ def article(article_id):
         )
         db.session.add(comment)
         db.session.commit()
-        # 🆕 give reputation to comment author
+
         comment.author.reputation += REP_COMMENT_POSTED
         db.session.commit()
 
@@ -695,15 +670,16 @@ def article(article_id):
 def privacy_policy():
     return render_template('privacy.html')
 
-# --- 🆕 COMMUNITY ENGAGEMENT ROUTES ---
 
-# Real Likes (AJAX)
+
+
 @app.route('/like/<string:obj_type>/<int:obj_id>', methods=['POST'])
 @csrf_protect
 def toggle_like(obj_type, obj_id):
     if not session.get('user_id'):
         return jsonify({'error': 'Login required'}), 401
     user_id = session['user_id']
+    liker = User.query.get(user_id)  # 🆕 get the user who liked
 
     if obj_type == 'comment':
         comment = Comment.query.get_or_404(obj_id)
@@ -715,9 +691,31 @@ def toggle_like(obj_type, obj_id):
         else:
             like = Like(user_id=user_id, comment_id=obj_id)
             db.session.add(like)
+            # Give reputation to comment owner (only if not self-like)
             if comment.user_id != user_id:
                 comment.author.reputation += REP_COMMENT_LIKED
-            db.session.commit()
+                # ---------- 🆕 NOTIFICATION FOR COMMENT LIKE ----------
+                notif = Notification(
+                    user_id=comment.user_id,
+                    message=f"{liker.fullname} liked your comment!",
+                    link=url_for('article', article_id=comment.article_id),
+                    is_read=False
+                )
+                db.session.add(notif)
+                db.session.commit()  # commit to get notif.id and like
+
+                # Emit real‑time notification update to comment owner
+                unread_count = Notification.query.filter_by(
+                    user_id=comment.user_id, is_read=False
+                ).count()
+                room = f"user_{comment.user_id}"
+                socketio.emit('notification_update', {
+                    'message': notif.message,
+                    'link': notif.link,
+                    'unread_count': unread_count
+                }, room=room)
+            else:
+                db.session.commit()
             return jsonify({'liked': True, 'count': comment.likes_count})
 
     elif obj_type == 'article':
@@ -731,11 +729,12 @@ def toggle_like(obj_type, obj_id):
             like = Like(user_id=user_id, article_id=obj_id)
             db.session.add(like)
             db.session.commit()
+            # Optional: You could add notification for article author here later
             return jsonify({'liked': True, 'count': len(article.likes)})
 
     return jsonify({'error': 'Invalid type'}), 400
 
-# Bookmarks
+
 @app.route('/bookmark/<int:article_id>', methods=['POST'])
 @csrf_protect
 def toggle_bookmark(article_id):
@@ -763,7 +762,7 @@ def my_bookmarks():
     return render_template('index.html', articles=bookmarked_articles,
                            category_title="YOUR BOOKMARKS")
 
-# Topic Follows
+
 @app.route('/follow/<string:topic>', methods=['POST'])
 @csrf_protect
 def follow_topic(topic):
@@ -795,14 +794,14 @@ def my_topics():
     return render_template('index.html', articles=articles,
                            category_title="YOUR FOLLOWED TOPICS")
 
-# Reporter Ranking
+
 @app.route('/reporters')
 def reporters():
     top_reporters = User.query.filter(User.report_score > 0)\
         .order_by(User.report_score.desc()).limit(20).all()
     return render_template('reporters.html', reporters=top_reporters)
 
-# --- INIT DB ---
+
 with app.app_context():
     db.create_all()
 
