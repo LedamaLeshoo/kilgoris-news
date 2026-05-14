@@ -10,6 +10,21 @@
         {% endif %}
     {% endwith %}
 
+
+<div style="margin-bottom: 10px;">
+    <span style="color: var(--red); font-weight: bold; text-transform: uppercase;">
+        {{ article.category or 'Uncategorized' }}
+    </span>
+    {% if article.category %}
+        <form action="{{ url_for('follow_topic', topic=article.category) }}" method="POST" style="display:inline;">
+            <input type="hidden" name="_csrf_token" value="{{ csrf_token() }}">
+            <button type="submit" class="btn" style="padding: 2px 10px; font-size: 0.8rem; background: var(--navy); color: white; border: none; border-radius: 4px; cursor: pointer;">
+                + Follow
+            </button>
+        </form>
+    {% endif %}
+</div>
+
     <h1 style="font-size: clamp(1.8rem, 8vw, 2.5rem); margin-bottom: 20px;">{{ article.title }}</h1>
     <p style="color: #666; margin-bottom: 20px;">Published on {{ article.date_posted.strftime('%B %d, %Y %H:%M:%S') }}</p>
 
@@ -24,6 +39,13 @@
     <div style="font-size: 1.1rem; line-height: 1.7; color: #333; white-space: pre-wrap; word-wrap: break-word;">
         {{ article.content }}
     </div>
+
+<form action="{{ url_for('toggle_bookmark', article_id=article.id) }}" method="POST" style="display: inline; margin-left: 15px;">
+    <input type="hidden" name="_csrf_token" value="{{ csrf_token() }}">
+    <button type="submit" class="btn" style="padding: 5px 15px; background: #eee; border: none; border-radius: 4px; cursor: pointer;">
+        🔖 Bookmark
+    </button>
+</form>
 
     <!-- Social Share Section -->
     <div style="margin-top: 40px; padding: 20px; border-top: 1px solid #eee; display: flex; flex-wrap: wrap; gap: 20px; align-items: center;">
