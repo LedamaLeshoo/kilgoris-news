@@ -77,16 +77,23 @@ app.config['MAIL_TIMEOUT'] = 10
 mail = Mail(app)
 
 # Database
+# Database
+import urllib.parse as urlparse
+
 database_url = os.environ.get('DATABASE_URL')
 if database_url:
+    # Render uses "postgres://" but SQLAlchemy 1.4+ needs "postgresql://"
     if database_url.startswith("postgres://"):
         database_url = database_url.replace("postgres://", "postgresql://", 1)
-    if "postgresql://" in database_url:
-        if "?" in database_url:
-            if "sslmode" not in database_url.split("?")[1]:
-                database_url += "&sslmode=require"
-        else:
-            database_url += "?sslmode=require"
+
+    # Parse URL and ensure SSL mode is set to "require"
+    url = urlparse.urlparse(database_url)
+    query = dict(urlparse.parse_qsl(url.query))
+    if 'sslmode' not in query:
+        query['sslmode'] = 'require'
+    url = url._replace(query=urlparse.urlencode(query))
+    database_url = urlparse.urlunparse(url)
+
 app.config['SQLALCHEMY_DATABASE_URI'] = database_url or 'sqlite:///kilgoris.db'
 app.config['SQLALCHEMY_TRACK_MODIFICATIONS'] = False
 db = SQLAlchemy(app)
