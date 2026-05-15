@@ -61,6 +61,10 @@
         </div>
 
         <div class="user-actions" style="display: flex; align-items: center; gap: 15px;">
+            {% if current_user %}
+    <img src="{{ current_user.profile_photo }}" alt="Profile" style="width: 32px; height: 32px; border-radius: 50%; object-fit: cover; vertical-align: middle; margin-right: 10px;">
+{% endif %}
+<a href="{{ url_for('profile', user_id=session['user_id']) }}">My Profile</a>
             <a href="{{ url_for('donate') }}" class="subscribe-btn" style="background-color: var(--red); color: white; text-decoration: none; padding: 8px 15px; border-radius: 4px; font-weight: bold; font-size: 0.85rem;">
                 <i class="fas fa-heart"></i> DONATE
             </a>

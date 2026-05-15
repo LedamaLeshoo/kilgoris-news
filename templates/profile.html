@@ -1,0 +1,50 @@
+{% extends 'base.html' %}
+{% block content %}
+<div class="container" style="margin-top: 40px;">
+    <div class="profile-card" style="max-width: 600px; margin: 0 auto; background: white; padding: 40px; border-radius: 12px; text-align: center; box-shadow: 0 5px 20px rgba(0,0,0,0.1);">
+        <img src="{{ profile_user.profile_photo }}" alt="Profile Photo" style="width: 150px; height: 150px; border-radius: 50%; object-fit: cover; border: 4px solid var(--navy);">
+        <h2 style="margin-top: 20px; color: var(--navy);">{{ profile_user.fullname }}</h2>
+        <p>🏆 Reputation: {{ profile_user.reputation }}</p>
+        <p>📰 Reports: {{ profile_user.report_score }}</p>
+        <p>👥 Followers: {{ profile_user.followers.count() }} | Following: {{ profile_user.following.count() }}</p>
+
+        {% if profile_user.id != session['user_id'] %}
+        <button id="follow-btn" class="btn" style="margin-top: 15px;"
+                onclick="toggleFollow({{ profile_user.id }})">
+            {% if is_following %} Unfollow {% else %} Follow {% endif %}
+        </button>
+        {% endif %}
+                {% if profile_user.id == session['user_id'] %}
+        <form action="{{ url_for('upload_photo') }}" method="POST" enctype="multipart/form-data" style="margin-top: 20px;">
+            <input type="hidden" name="_csrf_token" value="{{ csrf_token() }}">
+            <input type="file" name="photo" accept="image/*" required>
+            <button type="submit" class="btn">Update Photo</button>
+        </form>
+        {% endif %}
+    </div>
+</div>
+
+<script>
+function toggleFollow(userId) {
+    fetch('/follow_user/' + userId, {
+        method: 'POST',
+        headers: {
+            'Content-Type': 'application/x-www-form-urlencoded',
+            'X-CSRFToken': '{{ csrf_token() }}'
+        },
+        body: '_csrf_token={{ csrf_token() }}'
+    })
+    .then(response => response.json())
+    .then(data => {
+        if (data.error) {
+            alert(data.error);
+        } else {
+            const btn = document.getElementById('follow-btn');
+            btn.textContent = data.following ? 'Unfollow' : 'Follow';
+            // Optionally update follower count on the page
+            location.reload(); // simple refresh to update counts
+        }
+    });
+}
+</script>
+{% endblock %}
