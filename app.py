@@ -1,7 +1,3 @@
-# ⚡ Must be the very first lines – enable gevent async support
-import eventlet
-eventlet.monkey_patch()
-
 import os
 import random
 import string
@@ -39,7 +35,9 @@ socketio = SocketIO(
     app,
     cors_allowed_origins="*",
     ping_timeout=60,
-    ping_interval=25
+    ping_interval=25,
+    async_mode='threading'       # <-- add this
+)
 )
 
 # OAuth
