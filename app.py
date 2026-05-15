@@ -33,7 +33,7 @@ app.secret_key = app.config['SECRET_KEY']
 logging.basicConfig(level=logging.INFO)
 app.logger.setLevel(logging.INFO)
 
-# Socket.IO (threading mode – no gevent/eventlet needed)
+# Socket.IO (threading mode)
 socketio = SocketIO(
     app,
     cors_allowed_origins="*",
@@ -137,10 +137,22 @@ class User(db.Model):
     otp_expiry = db.Column(db.DateTime)
     reputation = db.Column(db.Integer, default=0)
     report_score = db.Column(db.Integer, default=0)
+    profile_photo = db.Column(db.String(500), default='https://via.placeholder.com/150')
+
     comments = db.relationship('Comment', backref='author', lazy=True)
     likes = db.relationship('Like', backref='user', lazy=True)
     bookmarks = db.relationship('Bookmark', backref='user', lazy=True)
     topic_follows = db.relationship('TopicFollow', backref='user', lazy=True)
+
+    # Follow system
+    followers = db.relationship(
+        'UserFollow', foreign_keys='UserFollow.followed_id',
+        backref='followed', lazy='dynamic', cascade='all, delete-orphan'
+    )
+    following = db.relationship(
+        'UserFollow', foreign_keys='UserFollow.follower_id',
+        backref='follower', lazy='dynamic', cascade='all, delete-orphan'
+    )
 
 class Article(db.Model):
     id = db.Column(db.Integer, primary_key=True)
@@ -206,6 +218,12 @@ class TopicFollow(db.Model):
     id = db.Column(db.Integer, primary_key=True)
     user_id = db.Column(db.Integer, db.ForeignKey('user.id'), nullable=False)
     topic = db.Column(db.String(50), nullable=False)
+    timestamp = db.Column(db.DateTime, default=datetime.utcnow)
+
+class UserFollow(db.Model):
+    id = db.Column(db.Integer, primary_key=True)
+    follower_id = db.Column(db.Integer, db.ForeignKey('user.id'), nullable=False)
+    followed_id = db.Column(db.Integer, db.ForeignKey('user.id'), nullable=False)
     timestamp = db.Column(db.DateTime, default=datetime.utcnow)
 
 # --- REPUTATION CONSTANTS ---
@@ -858,6 +876,66 @@ def reporters():
     top_reporters = User.query.filter(User.report_score > 0)\
         .order_by(User.report_score.desc()).limit(20).all()
     return render_template('reporters.html', reporters=top_reporters)
+
+# --- 🆕 PROFILE & FOLLOW ROUTES ---
+@app.route('/profile/<int:user_id>')
+@login_required
+def profile(user_id):
+    profile_user = User.query.get_or_404(user_id)
+    is_following = False
+    if session.get('user_id'):
+        is_following = UserFollow.query.filter_by(
+            follower_id=session['user_id'], followed_id=user_id
+        ).first() is not None
+    return render_template('profile.html',
+                           profile_user=profile_user,
+                           is_following=is_following)
+
+@app.route('/follow_user/<int:user_id>', methods=['POST'])
+@login_required
+@csrf_protect
+def follow_user(user_id):
+    if user_id == session['user_id']:
+        return jsonify({'error': 'You cannot follow yourself.'}), 400
+    user_to_follow = User.query.get_or_404(user_id)
+    existing = UserFollow.query.filter_by(
+        follower_id=session['user_id'], followed_id=user_id
+    ).first()
+    if existing:
+        db.session.delete(existing)
+        db.session.commit()
+        return jsonify({'following': False, 'follower_count': user_to_follow.followers.count()})
+    else:
+        follow = UserFollow(follower_id=session['user_id'], followed_id=user_id)
+        db.session.add(follow)
+        db.session.commit()
+        return jsonify({'following': True, 'follower_count': user_to_follow.followers.count()})
+
+@app.route('/upload_photo', methods=['POST'])
+@login_required
+@csrf_protect
+def upload_photo():
+    if 'photo' not in request.files:
+        flash('No file selected.', 'danger')
+        return redirect(request.referrer or url_for('home'))
+    file = request.files['photo']
+    if file.filename == '':
+        flash('No file selected.', 'danger')
+        return redirect(request.referrer or url_for('home'))
+    try:
+        upload_result = cloudinary.uploader.upload(
+            file,
+            transformation=[{'width': 200, 'height': 200, 'crop': 'fill', 'gravity': 'face'}]
+        )
+        photo_url = upload_result.get('secure_url')
+        user = User.query.get(session['user_id'])
+        user.profile_photo = photo_url
+        db.session.commit()
+        flash('Profile photo updated!', 'success')
+    except Exception as e:
+        app.logger.error(f"Photo upload error: {e}")
+        flash('Photo upload failed. Please try again.', 'danger')
+    return redirect(request.referrer or url_for('home'))
 
 # --- INIT DB ---
 with app.app_context():
