@@ -10,3 +10,4 @@ requests
 flask-socketio
 eventlet==0.35.0
 dnspython==2.6.1
+eventlet-websocket==0.1.1
