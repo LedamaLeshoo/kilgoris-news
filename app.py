@@ -1,6 +1,6 @@
 # ⚡ Must be the very first lines – enable gevent async support
-from gevent import monkey
-monkey.patch_all()
+import eventlet
+eventlet.monkey_patch()
 
 import os
 import random
