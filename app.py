@@ -65,21 +65,22 @@ if not all([cloudinary.config().cloud_name, cloudinary.config().api_key, cloudin
 app.config['MAX_CONTENT_LENGTH'] = 50 * 1024 * 1024  # 50MB
 
 # Email config
-# Email config
 app.config['MAIL_SERVER'] = 'smtp.gmail.com'
 app.config['MAIL_PORT'] = 465
 app.config['MAIL_USE_SSL'] = True
-app.config['MAIL_USE_TLS'] = False          # TLS and SSL are mutually exclusive
+app.config['MAIL_USE_TLS'] = False
 app.config['MAIL_USERNAME'] = os.environ.get('MAIL_USERNAME')
 app.config['MAIL_PASSWORD'] = os.environ.get('MAIL_PASSWORD')
-app.config['MAIL_TIMEOUT'] = 10             # seconds
+app.config['MAIL_TIMEOUT'] = 10
+
+# 🔥 THIS MUST BE RIGHT AFTER THE SETTINGS
+mail = Mail(app)
 
 # Database
 database_url = os.environ.get('DATABASE_URL')
 if database_url:
     if database_url.startswith("postgres://"):
         database_url = database_url.replace("postgres://", "postgresql://", 1)
-    # Ensure SSL mode is set for PostgreSQL
     if "postgresql://" in database_url:
         if "?" in database_url:
             if "sslmode" not in database_url.split("?")[1]:
@@ -531,7 +532,7 @@ def forgot_password():
                 flash('Reset link sent to your email.', 'info')
             except Exception as e:
                 app.logger.error(f"Failed to send reset email: {e}")
-                flash("Could not send email. Please try again later.", "danger")
+                flash(f"Could not send email. Error: {e}", "danger")
             return redirect(url_for('login'))
         flash('Email not found.', 'danger')
     return render_template('forgot_password.html')
