@@ -64,8 +64,9 @@
             {% if current_user %}
     <img src="{{ current_user.profile_photo }}" alt="Profile" style="width: 32px; height: 32px; border-radius: 50%; object-fit: cover; vertical-align: middle; margin-right: 10px;">
 {% endif %}
-<a href="{{ url_for('profile', user_id=session['user_id']) }}">My Profile</a>
-            <a href="{{ url_for('donate') }}" class="subscribe-btn" style="background-color: var(--red); color: white; text-decoration: none; padding: 8px 15px; border-radius: 4px; font-weight: bold; font-size: 0.85rem;">
+{% if session['user_id'] %}
+    <a href="{{ url_for('profile', user_id=session['user_id']) }}">My Profile</a>
+{% endif %}            <a href="{{ url_for('donate') }}" class="subscribe-btn" style="background-color: var(--red); color: white; text-decoration: none; padding: 8px 15px; border-radius: 4px; font-weight: bold; font-size: 0.85rem;">
                 <i class="fas fa-heart"></i> DONATE
             </a>
 
@@ -80,6 +81,10 @@
                 </div>
                 <span class="user-name" style="font-weight: bold; color: var(--navy);">
     {{ session.get('user_name') }}
+{% if current_user %}
+    <img src="{{ current_user.profile_photo }}" alt="Profile" style="width: 32px; height: 32px; border-radius: 50%; object-fit: cover; vertical-align: middle; margin-right: 10px;">
+{% endif %}
+
     {% if current_user %}
         <span style="color: var(--red); font-size: 0.8rem;">🏆 {{ current_user.reputation }}</span>
     {% endif %}
