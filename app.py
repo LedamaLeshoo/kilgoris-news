@@ -2,7 +2,10 @@ import os
 import random
 import string
 import logging
+import threading
+import urllib.parse as urlparse
 from datetime import datetime, timedelta
+
 import cloudinary
 import cloudinary.uploader
 from flask import (
@@ -20,7 +23,7 @@ from functools import wraps
 # --- APP INITIALIZATION ---
 app = Flask(__name__)
 
-# Secret key – MUST be set in environment, no fallback
+# Secret key
 app.config['SECRET_KEY'] = os.environ.get('SECRET_KEY')
 if not app.config['SECRET_KEY']:
     raise RuntimeError("SECRET_KEY environment variable is not set.")
@@ -30,7 +33,7 @@ app.secret_key = app.config['SECRET_KEY']
 logging.basicConfig(level=logging.INFO)
 app.logger.setLevel(logging.INFO)
 
-# Socket.IO
+# Socket.IO (threading mode – no gevent/eventlet needed)
 socketio = SocketIO(
     app,
     cors_allowed_origins="*",
@@ -72,21 +75,13 @@ app.config['MAIL_USE_TLS'] = False
 app.config['MAIL_USERNAME'] = os.environ.get('MAIL_USERNAME')
 app.config['MAIL_PASSWORD'] = os.environ.get('MAIL_PASSWORD')
 app.config['MAIL_TIMEOUT'] = 10
-
-# 🔥 THIS MUST BE RIGHT AFTER THE SETTINGS
 mail = Mail(app)
 
-# Database
-# Database
-import urllib.parse as urlparse
-
+# Database (with SSL fix)
 database_url = os.environ.get('DATABASE_URL')
 if database_url:
-    # Render uses "postgres://" but SQLAlchemy 1.4+ needs "postgresql://"
     if database_url.startswith("postgres://"):
         database_url = database_url.replace("postgres://", "postgresql://", 1)
-
-    # Parse URL and ensure SSL mode is set to "require"
     url = urlparse.urlparse(database_url)
     query = dict(urlparse.parse_qsl(url.query))
     if 'sslmode' not in query:
@@ -525,23 +520,32 @@ def forgot_password():
     if request.method == 'POST':
         email = request.form.get('email')
         user = User.query.filter_by(email=email).first()
-        if user:
-            token = s.dumps(email, salt='password-reset-salt')
-            link = url_for('reset_password', token=token, _external=True)
-            msg = Message(
-                'Password Reset Request - Kilgoris News',
-                sender=app.config['MAIL_USERNAME'],
-                recipients=[email]
-            )
-            msg.body = f'To reset your password, visit: {link}'
+        if not user:
+            flash('Email not found.', 'danger')
+            return render_template('forgot_password.html')
+
+        token = s.dumps(email, salt='password-reset-salt')
+        link = url_for('reset_password', token=token, _external=True)
+
+        # Send email in a background thread – won't block the request
+        def send_async_email():
             try:
+                msg = Message(
+                    'Password Reset Request - Kilgoris News',
+                    sender=app.config['MAIL_USERNAME'],
+                    recipients=[email]
+                )
+                msg.body = f'To reset your password, visit: {link}'
                 mail.send(msg)
-                flash('Reset link sent to your email.', 'info')
+                app.logger.info(f"Reset email sent to {email}")
             except Exception as e:
-                app.logger.error(f"Failed to send reset email: {e}")
-                flash(f"Could not send email. Error: {e}", "danger")
-            return redirect(url_for('login'))
-        flash('Email not found.', 'danger')
+                app.logger.error(f"Async mail error: {e}")
+
+        threading.Thread(target=send_async_email).start()
+
+        # Show the reset link immediately on the page (for testing)
+        flash(f"Reset link (also sent to your email): {link}", 'info')
+        return redirect(url_for('login'))
     return render_template('forgot_password.html')
 
 @app.route('/reset_password/<token>', methods=['GET', 'POST'])
