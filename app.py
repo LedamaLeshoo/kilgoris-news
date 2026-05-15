@@ -74,8 +74,16 @@ mail = Mail(app)
 
 # Database
 database_url = os.environ.get('DATABASE_URL')
-if database_url and database_url.startswith("postgres://"):
-    database_url = database_url.replace("postgres://", "postgresql://", 1)
+if database_url:
+    if database_url.startswith("postgres://"):
+        database_url = database_url.replace("postgres://", "postgresql://", 1)
+    # Ensure SSL mode is set for PostgreSQL
+    if "postgresql://" in database_url:
+        if "?" in database_url:
+            if "sslmode" not in database_url.split("?")[1]:
+                database_url += "&sslmode=require"
+        else:
+            database_url += "?sslmode=require"
 app.config['SQLALCHEMY_DATABASE_URI'] = database_url or 'sqlite:///kilgoris.db'
 app.config['SQLALCHEMY_TRACK_MODIFICATIONS'] = False
 db = SQLAlchemy(app)
