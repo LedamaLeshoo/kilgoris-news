@@ -567,25 +567,20 @@ def forgot_password():
         token = s.dumps(email, salt='password-reset-salt')
         link = url_for('reset_password', token=token, _external=True)
 
-        # Send email in a background thread – won't block the request
-        def send_async_email():
-            try:
-                msg = Message(
-                    'Password Reset Request - Kilgoris News',
-                    sender=app.config['MAIL_USERNAME'],
-                    recipients=[email]
-                )
-                msg.body = f'To reset your password, visit: {link}'
-                mail.send(msg)
-                app.logger.info(f"Reset email sent to {email}")
-            except Exception as e:
-                app.logger.error(f"Async mail error: {e}")
+        # --- Temporary synchronous send to see error ---
+        try:
+            msg = Message(
+                'Password Reset Request - Kilgoris News',
+                sender=app.config['MAIL_USERNAME'],
+                recipients=[email]
+            )
+            msg.body = f'To reset your password, visit: {link}'
+            mail.send(msg)
+            flash('Reset link sent – check your inbox.', 'success')
+        except Exception as e:
+            flash(f'Email error: {e}', 'danger')   # this shows the exact SMTP error
 
-        threading.Thread(target=send_async_email).start()
-
-        # Show the reset link immediately on the page (for testing)
-        flash('If that email is registered, a reset link has been sent.', 'info')
-        return redirect(url_for('login'))
+        return render_template('forgot_password.html')
     return render_template('forgot_password.html')
 
 @app.route('/reset_password/<token>', methods=['GET', 'POST'])
