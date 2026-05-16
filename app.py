@@ -1,3 +1,6 @@
+import eventlet
+eventlet.monkey_patch()
+
 import os
 import random
 import string
@@ -37,8 +40,8 @@ app.logger.setLevel(logging.INFO)
 socketio = SocketIO(
     app,
     cors_allowed_origins="*",
-    ping_timeout=60,
-    ping_interval=25,
+    ping_timeout=20,
+    ping_interval=10,
     async_mode='threading'
 )
 
@@ -281,8 +284,12 @@ def handle_join_community_room():
 @app.route('/')
 @login_required
 def home():
-    articles = Article.query.order_by(Article.date_posted.desc()).all()
-    return render_template('index.html', articles=articles)
+    page = request.args.get('page', 1, type=int)
+    per_page = 12
+    pagination = Article.query.order_by(Article.date_posted.desc())\
+        .paginate(page=page, per_page=per_page, error_out=False)
+    return render_template('index.html', articles=pagination.items,
+                           pagination=pagination)
 
 # --- AUTH (public) ---
 @app.route('/login/google')
@@ -689,21 +696,31 @@ def support():
 @login_required
 def search():
     query = request.args.get('q')
+    page = request.args.get('page', 1, type=int)
+    per_page = 12
     if query:
-        results = Article.query.filter(
+        pagination = Article.query.filter(
             (Article.title.contains(query)) | (Article.content.contains(query))
-        ).order_by(Article.date_posted.desc()).all()
+        ).order_by(Article.date_posted.desc())\
+        .paginate(page=page, per_page=per_page, error_out=False)
+        articles = pagination.items
     else:
-        results = []
-    return render_template('index.html', articles=results,
+        articles = []
+        pagination = None
+    return render_template('index.html', articles=articles,
+                           pagination=pagination,
                            category_title=f"SEARCH RESULTS FOR: {query}")
 
 @app.route('/category/<string:cat_name>')
 @login_required
 def category(cat_name):
-    category_articles = Article.query.filter_by(category=cat_name)\
-        .order_by(Article.date_posted.desc()).all()
-    return render_template('index.html', articles=category_articles,
+    page = request.args.get('page', 1, type=int)
+    per_page = 12
+    pagination = Article.query.filter_by(category=cat_name)\
+        .order_by(Article.date_posted.desc())\
+        .paginate(page=page, per_page=per_page, error_out=False)
+    return render_template('index.html', articles=pagination.items,
+                           pagination=pagination,
                            category_title=cat_name.upper())
 
 @app.route('/admin')
@@ -849,9 +866,15 @@ def toggle_bookmark(article_id):
 @app.route('/my-bookmarks')
 @login_required
 def my_bookmarks():
+    page = request.args.get('page', 1, type=int)
+    per_page = 12
     user = User.query.get(session['user_id'])
-    bookmarked_articles = [bm.article for bm in user.bookmarks]
-    return render_template('index.html', articles=bookmarked_articles,
+    bookmarked_ids = [bm.article_id for bm in user.bookmarks]
+    pagination = Article.query.filter(Article.id.in_(bookmarked_ids))\
+        .order_by(Article.date_posted.desc())\
+        .paginate(page=page, per_page=per_page, error_out=False)
+    return render_template('index.html', articles=pagination.items,
+                           pagination=pagination,
                            category_title="YOUR BOOKMARKS")
 
 # Topic Follows
@@ -875,13 +898,18 @@ def follow_topic(topic):
 @app.route('/my-topics')
 @login_required
 def my_topics():
+    page = request.args.get('page', 1, type=int)
+    per_page = 12
     user = User.query.get(session['user_id'])
     followed_topics = [tf.topic for tf in user.topic_follows]
     if not followed_topics:
-        return render_template('index.html', articles=[], category_title="YOU FOLLOW NO TOPICS YET")
-    articles = Article.query.filter(Article.category.in_(followed_topics))\
-        .order_by(Article.date_posted.desc()).all()
-    return render_template('index.html', articles=articles,
+        return render_template('index.html', articles=[], pagination=None,
+                               category_title="YOU FOLLOW NO TOPICS YET")
+    pagination = Article.query.filter(Article.category.in_(followed_topics))\
+        .order_by(Article.date_posted.desc())\
+        .paginate(page=page, per_page=per_page, error_out=False)
+    return render_template('index.html', articles=pagination.items,
+                           pagination=pagination,
                            category_title="YOUR FOLLOWED TOPICS")
 
 # Reporter Ranking
@@ -957,13 +985,15 @@ def upload_photo():
 @login_required
 def marketplace():
     category_filter = request.args.get('category')
+    page = request.args.get('page', 1, type=int)
+    per_page = 12
+    query = Product.query.filter_by(is_sold=False)
     if category_filter:
-        products = Product.query.filter_by(is_sold=False, category=category_filter)\
-            .order_by(Product.date_posted.desc()).all()
-    else:
-        products = Product.query.filter_by(is_sold=False)\
-            .order_by(Product.date_posted.desc()).all()
-    return render_template('marketplace.html', products=products)
+        query = query.filter_by(category=category_filter)
+    pagination = query.order_by(Product.date_posted.desc())\
+        .paginate(page=page, per_page=per_page, error_out=False)
+    return render_template('marketplace.html', products=pagination.items,
+                           pagination=pagination)
 
 @app.route('/marketplace/create', methods=['GET', 'POST'])
 @login_required
