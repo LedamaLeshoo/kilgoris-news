@@ -2,6 +2,7 @@ import os
 import random
 import string
 import logging
+import threading
 import urllib.parse as urlparse
 from datetime import datetime, timedelta
 
@@ -12,13 +13,12 @@ from flask import (
     session, abort, jsonify
 )
 from flask_sqlalchemy import SQLAlchemy
+from flask_mail import Mail, Message
 from werkzeug.security import generate_password_hash, check_password_hash
 from itsdangerous import URLSafeTimedSerializer
 from authlib.integrations.flask_client import OAuth
 from flask_socketio import SocketIO, emit
 from functools import wraps
-from sendgrid import SendGridAPIClient
-from sendgrid.helpers.mail import Mail as SendGridMail
 
 # --- APP INITIALIZATION ---
 app = Flask(__name__)
@@ -67,8 +67,15 @@ if not all([cloudinary.config().cloud_name, cloudinary.config().api_key, cloudin
 # --- APP CONFIG ---
 app.config['MAX_CONTENT_LENGTH'] = 50 * 1024 * 1024  # 50MB
 
-# Email sender (your verified SendGrid sender)
+# Email config (SMTP)
+app.config['MAIL_SERVER'] = 'smtp.gmail.com'
+app.config['MAIL_PORT'] = 465
+app.config['MAIL_USE_SSL'] = True
+app.config['MAIL_USE_TLS'] = False
 app.config['MAIL_USERNAME'] = os.environ.get('MAIL_USERNAME')
+app.config['MAIL_PASSWORD'] = os.environ.get('MAIL_PASSWORD')
+app.config['MAIL_TIMEOUT'] = 10
+mail = Mail(app)
 
 # Database (with SSL fix)
 database_url = os.environ.get('DATABASE_URL')
@@ -116,23 +123,6 @@ def login_required(f):
             return redirect(url_for('login'))
         return f(*args, **kwargs)
     return decorated_function
-
-# --- EMAIL HELPER ---
-def send_email(to_email, subject, body):
-    """Send an email via SendGrid API. Returns True on success."""
-    try:
-        message = SendGridMail(
-            from_email=app.config['MAIL_USERNAME'],
-            to_emails=to_email,
-            subject=subject,
-            plain_text_content=body
-        )
-        sg = SendGridAPIClient(os.environ.get('SENDGRID_API_KEY'))
-        response = sg.send(message)
-        return response.status_code in (200, 201, 202)
-    except Exception as e:
-        app.logger.error(f"SendGrid error: {e}")
-        return False
 
 # --- MODELS ---
 class User(db.Model):
@@ -487,15 +477,18 @@ def register():
         db.session.add(new_user)
         db.session.commit()
 
-        success = send_email(
-            email,
-            'Verify your Kilgoris News Account',
-            f'Your verification code is: {otp} (expires in 10 minutes)'
-        )
-        if success:
+        try:
+            msg = Message(
+                'Verify your Kilgoris News Account',
+                sender=app.config['MAIL_USERNAME'],
+                recipients=[email]
+            )
+            msg.body = f"Your verification code is: {otp} (expires in 10 minutes)"
+            mail.send(msg)
             session['verify_email'] = email
             return redirect(url_for('verify'))
-        else:
+        except Exception as e:
+            app.logger.error(f"Failed to send verification email: {e}")
             flash("Account created, but verification email could not be sent. "
                   "Please request a new code on the verification page.", "warning")
             session['verify_email'] = email
@@ -541,14 +534,17 @@ def resend_otp():
     user.otp_code = new_otp
     user.otp_expiry = datetime.utcnow() + timedelta(minutes=10)
     db.session.commit()
-    success = send_email(
-        email,
-        'New Verification Code - Kilgoris News',
-        f'Your new verification code is: {new_otp} (valid for 10 minutes)'
-    )
-    if success:
+    try:
+        msg = Message(
+            'New Verification Code - Kilgoris News',
+            sender=app.config['MAIL_USERNAME'],
+            recipients=[email]
+        )
+        msg.body = f"Your new verification code is: {new_otp} (valid for 10 minutes)"
+        mail.send(msg)
         flash("A new code has been sent to your email.", "info")
-    else:
+    except Exception as e:
+        app.logger.error(f"Failed to resend OTP: {e}")
         flash("Could not send email. Please try again later.", "danger")
     return redirect(url_for('verify'))
 
@@ -565,16 +561,23 @@ def forgot_password():
         token = s.dumps(email, salt='password-reset-salt')
         link = url_for('reset_password', token=token, _external=True)
 
-        success = send_email(
-            email,
-            'Password Reset Request - Kilgoris News',
-            f'To reset your password, visit: {link}'
-        )
-        if success:
-            flash('If that email is registered, a reset link has been sent.', 'success')
-        else:
-            flash('Could not send email. Please try again later.', 'danger')
+        # Send email in a background thread
+        def send_async_email():
+            try:
+                msg = Message(
+                    'Password Reset Request - Kilgoris News',
+                    sender=app.config['MAIL_USERNAME'],
+                    recipients=[email]
+                )
+                msg.body = f'To reset your password, visit: {link}'
+                mail.send(msg)
+                app.logger.info(f"Reset email sent to {email}")
+            except Exception as e:
+                app.logger.error(f"Async mail error: {e}")
 
+        threading.Thread(target=send_async_email).start()
+
+        flash('If that email is registered, a reset link has been sent.', 'info')
         return render_template('forgot_password.html')
     return render_template('forgot_password.html')
 
