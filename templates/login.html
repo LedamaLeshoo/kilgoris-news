@@ -2,6 +2,16 @@
 
 {% block content %}
 
+{% with messages = get_flashed_messages(with_categories=true) %}
+    {% if messages %}
+        {% for category, message in messages %}
+            <div class="flash {{ category }}" style="padding: 10px; margin-bottom: 15px; border-radius: 4px; background: #e8f0fe; color: #333;">
+                {{ message }}
+            </div>
+        {% endfor %}
+    {% endif %}
+{% endwith %}
+
 <div class="auth-container">
 
     <div class="auth-card">
