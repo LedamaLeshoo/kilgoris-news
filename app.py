@@ -1064,6 +1064,41 @@ def mark_sold(product_id):
     flash('Item marked as sold!', 'success')
     return redirect(url_for('product_detail', product_id=product_id))
 
+import google.generativeai as genai
+
+# --- AI CHATBOT (Gemini) ---
+genai.configure(api_key=os.environ.get('GEMINI_API_KEY'))
+model = genai.GenerativeModel('gemini-2.0-flash')
+
+@socketio.on('ai_message')
+def handle_ai_message(data):
+    user_message = data.get('message', '')
+    if not user_message.strip():
+        return
+
+    try:
+        # Add context to make the AI friendly and relevant
+        prompt = (
+            "You are a helpful assistant on Kilgoris News, a community news website for Kilgoris, Kenya. "
+            "Answer the user's question in a friendly, concise way. "
+            "If they ask about news, you can mention recent headlines if you know them. "
+            "Keep answers under 3 sentences unless the user asks for more detail."
+        )
+        response = model.generate_content(
+            f"{prompt}\n\nUser: {user_message}",
+            generation_config=genai.types.GenerationConfig(
+                max_output_tokens=200,
+                temperature=0.7,
+            )
+        )
+        reply = response.text.strip()
+    except Exception as e:
+        reply = "Sorry, I'm having trouble right now. Please try again later."
+        app.logger.error(f"Gemini error: {e}")
+
+    # Emit the response back to the same user
+    socketio.emit('ai_response', {'message': reply}, room=request.sid)
+
 # --- INIT DB ---
 with app.app_context():
     db.create_all()
