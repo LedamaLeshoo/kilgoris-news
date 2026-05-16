@@ -1,11 +1,7 @@
-from gevent import monkey
-monkey.patch_all()
-
 import os
 import random
 import string
 import logging
-import threading
 import urllib.parse as urlparse
 from datetime import datetime, timedelta
 
@@ -16,12 +12,13 @@ from flask import (
     session, abort, jsonify
 )
 from flask_sqlalchemy import SQLAlchemy
-from flask_mail import Mail, Message
 from werkzeug.security import generate_password_hash, check_password_hash
 from itsdangerous import URLSafeTimedSerializer
 from authlib.integrations.flask_client import OAuth
 from flask_socketio import SocketIO, emit
 from functools import wraps
+from sendgrid import SendGridAPIClient
+from sendgrid.helpers.mail import Mail as SendGridMail
 
 # --- APP INITIALIZATION ---
 app = Flask(__name__)
@@ -70,15 +67,8 @@ if not all([cloudinary.config().cloud_name, cloudinary.config().api_key, cloudin
 # --- APP CONFIG ---
 app.config['MAX_CONTENT_LENGTH'] = 50 * 1024 * 1024  # 50MB
 
-# Email config
-app.config['MAIL_SERVER'] = 'smtp.gmail.com'
-app.config['MAIL_PORT'] = 465
-app.config['MAIL_USE_SSL'] = True
-app.config['MAIL_USE_TLS'] = False
+# Email sender (your verified SendGrid sender)
 app.config['MAIL_USERNAME'] = os.environ.get('MAIL_USERNAME')
-app.config['MAIL_PASSWORD'] = os.environ.get('MAIL_PASSWORD')
-app.config['MAIL_TIMEOUT'] = 10
-mail = Mail(app)
 
 # Database (with SSL fix)
 database_url = os.environ.get('DATABASE_URL')
@@ -127,6 +117,23 @@ def login_required(f):
         return f(*args, **kwargs)
     return decorated_function
 
+# --- EMAIL HELPER ---
+def send_email(to_email, subject, body):
+    """Send an email via SendGrid API. Returns True on success."""
+    try:
+        message = SendGridMail(
+            from_email=app.config['MAIL_USERNAME'],
+            to_emails=to_email,
+            subject=subject,
+            plain_text_content=body
+        )
+        sg = SendGridAPIClient(os.environ.get('SENDGRID_API_KEY'))
+        response = sg.send(message)
+        return response.status_code in (200, 201, 202)
+    except Exception as e:
+        app.logger.error(f"SendGrid error: {e}")
+        return False
+
 # --- MODELS ---
 class User(db.Model):
     id = db.Column(db.Integer, primary_key=True)
@@ -147,7 +154,6 @@ class User(db.Model):
     bookmarks = db.relationship('Bookmark', backref='user', lazy=True)
     topic_follows = db.relationship('TopicFollow', backref='user', lazy=True)
 
-    # Follow system
     followers = db.relationship(
         'UserFollow', foreign_keys='UserFollow.followed_id',
         backref='followed', lazy='dynamic', cascade='all, delete-orphan'
@@ -156,7 +162,6 @@ class User(db.Model):
         'UserFollow', foreign_keys='UserFollow.follower_id',
         backref='follower', lazy='dynamic', cascade='all, delete-orphan'
     )
-    # 🆕 Marketplace relationship
     products = db.relationship('Product', backref='seller', lazy=True)
 
 class Article(db.Model):
@@ -231,13 +236,12 @@ class UserFollow(db.Model):
     followed_id = db.Column(db.Integer, db.ForeignKey('user.id'), nullable=False)
     timestamp = db.Column(db.DateTime, default=datetime.utcnow)
 
-# 🆕 Marketplace model
 class Product(db.Model):
     id = db.Column(db.Integer, primary_key=True)
     title = db.Column(db.String(200), nullable=False)
     description = db.Column(db.Text, nullable=False)
     price = db.Column(db.Float, nullable=False)
-    category = db.Column(db.String(50), nullable=False)  # Electronics, Fashion, etc.
+    category = db.Column(db.String(50), nullable=False)
     location = db.Column(db.String(100))
     image_url = db.Column(db.String(500), default='https://via.placeholder.com/400x300')
     seller_id = db.Column(db.Integer, db.ForeignKey('user.id'), nullable=False)
@@ -483,18 +487,15 @@ def register():
         db.session.add(new_user)
         db.session.commit()
 
-        try:
-            msg = Message(
-                'Verify your Kilgoris News Account',
-                sender=app.config['MAIL_USERNAME'],
-                recipients=[email]
-            )
-            msg.body = f"Your verification code is: {otp} (expires in 10 minutes)"
-            mail.send(msg)
+        success = send_email(
+            email,
+            'Verify your Kilgoris News Account',
+            f'Your verification code is: {otp} (expires in 10 minutes)'
+        )
+        if success:
             session['verify_email'] = email
             return redirect(url_for('verify'))
-        except Exception as e:
-            app.logger.error(f"Failed to send verification email: {e}")
+        else:
             flash("Account created, but verification email could not be sent. "
                   "Please request a new code on the verification page.", "warning")
             session['verify_email'] = email
@@ -540,17 +541,14 @@ def resend_otp():
     user.otp_code = new_otp
     user.otp_expiry = datetime.utcnow() + timedelta(minutes=10)
     db.session.commit()
-    try:
-        msg = Message(
-            'New Verification Code - Kilgoris News',
-            sender=app.config['MAIL_USERNAME'],
-            recipients=[email]
-        )
-        msg.body = f"Your new verification code is: {new_otp} (valid for 10 minutes)"
-        mail.send(msg)
+    success = send_email(
+        email,
+        'New Verification Code - Kilgoris News',
+        f'Your new verification code is: {new_otp} (valid for 10 minutes)'
+    )
+    if success:
         flash("A new code has been sent to your email.", "info")
-    except Exception as e:
-        app.logger.error(f"Failed to resend OTP: {e}")
+    else:
         flash("Could not send email. Please try again later.", "danger")
     return redirect(url_for('verify'))
 
@@ -567,18 +565,15 @@ def forgot_password():
         token = s.dumps(email, salt='password-reset-salt')
         link = url_for('reset_password', token=token, _external=True)
 
-        # --- Temporary synchronous send to see error ---
-        try:
-            msg = Message(
-                'Password Reset Request - Kilgoris News',
-                sender=app.config['MAIL_USERNAME'],
-                recipients=[email]
-            )
-            msg.body = f'To reset your password, visit: {link}'
-            mail.send(msg)
-            flash('Reset link sent – check your inbox.', 'success')
-        except Exception as e:
-            flash(f'Email error: {e}', 'danger')   # this shows the exact SMTP error
+        success = send_email(
+            email,
+            'Password Reset Request - Kilgoris News',
+            f'To reset your password, visit: {link}'
+        )
+        if success:
+            flash('If that email is registered, a reset link has been sent.', 'success')
+        else:
+            flash('Could not send email. Please try again later.', 'danger')
 
         return render_template('forgot_password.html')
     return render_template('forgot_password.html')
@@ -673,6 +668,7 @@ def login():
             session['user_id'] = user.id
             session['user_name'] = user.fullname
             session['is_admin'] = user.is_admin
+            flash("Login successful!", "success")
             return redirect(url_for('home'))
         flash("Invalid email or password.", "danger")
     return render_template('login.html')
@@ -680,7 +676,8 @@ def login():
 @app.route('/logout')
 def logout():
     session.clear()
-    return redirect(url_for('home'))
+    flash("You have been logged out.", "info")
+    return redirect(url_for('login'))
 
 # --- MISC PAGES (some may be public) ---
 @app.route('/support')
@@ -781,7 +778,7 @@ def article(article_id):
 def privacy_policy():
     return render_template('privacy.html')
 
-# --- 🆕 COMMUNITY ENGAGEMENT ROUTES ---
+# --- COMMUNITY ENGAGEMENT ROUTES ---
 
 # Real Likes (AJAX)
 @app.route('/like/<string:obj_type>/<int:obj_id>', methods=['POST'])
@@ -803,7 +800,6 @@ def toggle_like(obj_type, obj_id):
             db.session.add(like)
             if comment.user_id != user_id:
                 comment.author.reputation += REP_COMMENT_LIKED
-                # Notification for comment owner
                 notif = Notification(
                     user_id=comment.user_id,
                     message=f"{liker.fullname} liked your comment!",
@@ -915,7 +911,7 @@ def reporters():
         .order_by(User.report_score.desc()).limit(20).all()
     return render_template('reporters.html', reporters=top_reporters)
 
-# --- 🆕 PROFILE & FOLLOW ROUTES ---
+# --- PROFILE & FOLLOW ROUTES ---
 @app.route('/profile/<int:user_id>')
 @login_required
 def profile(user_id):
@@ -975,7 +971,7 @@ def upload_photo():
         flash('Photo upload failed. Please try again.', 'danger')
     return redirect(request.referrer or url_for('home'))
 
-# --- 🆕 MARKETPLACE ROUTES ---
+# --- MARKETPLACE ROUTES ---
 @app.route('/marketplace')
 @login_required
 def marketplace():
