@@ -584,7 +584,7 @@ def forgot_password():
         threading.Thread(target=send_async_email).start()
 
         # Show the reset link immediately on the page (for testing)
-        flash(f"Reset link (also sent to your email): {link}", 'info')
+        flash('If that email is registered, a reset link has been sent.', 'info')
         return redirect(url_for('login'))
     return render_template('forgot_password.html')
 
