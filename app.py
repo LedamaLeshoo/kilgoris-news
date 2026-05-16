@@ -153,6 +153,8 @@ class User(db.Model):
         'UserFollow', foreign_keys='UserFollow.follower_id',
         backref='follower', lazy='dynamic', cascade='all, delete-orphan'
     )
+    # 🆕 Marketplace relationship
+    products = db.relationship('Product', backref='seller', lazy=True)
 
 class Article(db.Model):
     id = db.Column(db.Integer, primary_key=True)
@@ -225,6 +227,19 @@ class UserFollow(db.Model):
     follower_id = db.Column(db.Integer, db.ForeignKey('user.id'), nullable=False)
     followed_id = db.Column(db.Integer, db.ForeignKey('user.id'), nullable=False)
     timestamp = db.Column(db.DateTime, default=datetime.utcnow)
+
+# 🆕 Marketplace model
+class Product(db.Model):
+    id = db.Column(db.Integer, primary_key=True)
+    title = db.Column(db.String(200), nullable=False)
+    description = db.Column(db.Text, nullable=False)
+    price = db.Column(db.Float, nullable=False)
+    category = db.Column(db.String(50), nullable=False)  # Electronics, Fashion, etc.
+    location = db.Column(db.String(100))
+    image_url = db.Column(db.String(500), default='https://via.placeholder.com/400x300')
+    seller_id = db.Column(db.Integer, db.ForeignKey('user.id'), nullable=False)
+    is_sold = db.Column(db.Boolean, default=False)
+    date_posted = db.Column(db.DateTime, default=datetime.utcnow)
 
 # --- REPUTATION CONSTANTS ---
 REP_VERIFIED_EMAIL = 5
@@ -936,6 +951,91 @@ def upload_photo():
         app.logger.error(f"Photo upload error: {e}")
         flash('Photo upload failed. Please try again.', 'danger')
     return redirect(request.referrer or url_for('home'))
+
+# --- 🆕 MARKETPLACE ROUTES ---
+@app.route('/marketplace')
+@login_required
+def marketplace():
+    category_filter = request.args.get('category')
+    if category_filter:
+        products = Product.query.filter_by(is_sold=False, category=category_filter)\
+            .order_by(Product.date_posted.desc()).all()
+    else:
+        products = Product.query.filter_by(is_sold=False)\
+            .order_by(Product.date_posted.desc()).all()
+    return render_template('marketplace.html', products=products)
+
+@app.route('/marketplace/create', methods=['GET', 'POST'])
+@login_required
+@csrf_protect
+def create_product():
+    if request.method == 'POST':
+        title = request.form.get('title')
+        description = request.form.get('description')
+        price = float(request.form.get('price'))
+        category = request.form.get('category')
+        location = request.form.get('location')
+        image_file = request.files.get('image')
+
+        image_url = 'https://via.placeholder.com/400x300'
+        if image_file and image_file.filename != '':
+            try:
+                upload_result = cloudinary.uploader.upload(
+                    image_file,
+                    transformation=[{'width': 400, 'height': 300, 'crop': 'fill'}]
+                )
+                image_url = upload_result.get('secure_url')
+            except Exception as e:
+                app.logger.error(f"Image upload failed: {e}")
+                flash('Image upload failed. Please try again.', 'danger')
+                return redirect(url_for('create_product'))
+
+        product = Product(
+            title=title,
+            description=description,
+            price=price,
+            category=category,
+            location=location,
+            image_url=image_url,
+            seller_id=session['user_id']
+        )
+        db.session.add(product)
+        db.session.commit()
+        flash('Your listing is live!', 'success')
+        return redirect(url_for('marketplace'))
+    return render_template('create_product.html')
+
+@app.route('/product/<int:product_id>')
+@login_required
+def product_detail(product_id):
+    product = Product.query.get_or_404(product_id)
+    return render_template('product_detail.html', product=product)
+
+@app.route('/product/<int:product_id>/delete', methods=['POST'])
+@login_required
+@csrf_protect
+def delete_product(product_id):
+    product = Product.query.get_or_404(product_id)
+    if product.seller_id != session['user_id'] and not session.get('is_admin'):
+        flash('You can only delete your own listings.', 'danger')
+        return redirect(url_for('product_detail', product_id=product_id))
+    db.session.delete(product)
+    db.session.commit()
+    flash('Listing deleted.', 'info')
+    return redirect(url_for('marketplace'))
+
+@app.route('/product/<int:product_id>/sold', methods=['POST'])
+@login_required
+@csrf_protect
+def mark_sold(product_id):
+    product = Product.query.get_or_404(product_id)
+    if product.seller_id != session['user_id']:
+        flash('Only the seller can mark as sold.', 'danger')
+        return redirect(url_for('product_detail', product_id=product_id))
+    product.is_sold = True
+    db.session.commit()
+    flash('Item marked as sold!', 'success')
+    return redirect(url_for('product_detail', product_id=product_id))
 
 # --- INIT DB ---
 with app.app_context():
