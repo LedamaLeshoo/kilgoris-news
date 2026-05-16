@@ -212,5 +212,136 @@ socket.on('new_article', function(data) {
     }
 });
 </script>
+<!-- AI Chat Widget -->
+<style>
+    #ai-chat-widget {
+        position: fixed;
+        bottom: 20px;
+        right: 20px;
+        z-index: 9999;
+        font-family: Arial, sans-serif;
+    }
+    #ai-chat-button {
+        width: 60px;
+        height: 60px;
+        background: var(--navy);
+        border-radius: 50%;
+        box-shadow: 0 4px 15px rgba(0,0,0,0.2);
+        display: flex;
+        align-items: center;
+        justify-content: center;
+        cursor: pointer;
+        color: white;
+        font-size: 28px;
+        transition: transform 0.3s;
+    }
+    #ai-chat-button:hover { transform: scale(1.1); }
+    #ai-chat-window {
+        display: none;
+        position: absolute;
+        bottom: 70px;
+        right: 0;
+        width: 320px;
+        height: 400px;
+        background: white;
+        border-radius: 12px;
+        box-shadow: 0 10px 30px rgba(0,0,0,0.15);
+        overflow: hidden;
+        flex-direction: column;
+    }
+    #ai-chat-window.active { display: flex; }
+    #ai-chat-messages {
+        flex: 1;
+        padding: 15px;
+        overflow-y: auto;
+        background: #f9f9f9;
+    }
+    .ai-msg, .user-msg {
+        margin-bottom: 12px;
+        max-width: 85%;
+        clear: both;
+    }
+    .ai-msg {
+        float: left;
+        background: var(--navy);
+        color: white;
+        padding: 10px 14px;
+        border-radius: 18px 18px 18px 5px;
+    }
+    .user-msg {
+        float: right;
+        background: #e0e0e0;
+        color: #333;
+        padding: 10px 14px;
+        border-radius: 18px 18px 5px 18px;
+    }
+    #ai-chat-input-area {
+        display: flex;
+        border-top: 1px solid #ddd;
+        padding: 10px;
+        background: white;
+    }
+    #ai-chat-input {
+        flex: 1;
+        border: 1px solid #ccc;
+        border-radius: 20px;
+        padding: 8px 15px;
+        outline: none;
+    }
+    #ai-chat-send {
+        background: var(--navy);
+        color: white;
+        border: none;
+        border-radius: 50%;
+        width: 40px;
+        height: 40px;
+        margin-left: 10px;
+        cursor: pointer;
+    }
+</style>
+
+<div id="ai-chat-widget">
+    <div id="ai-chat-button" onclick="toggleChat()">
+        <i class="fas fa-robot"></i>
+    </div>
+    <div id="ai-chat-window">
+        <div id="ai-chat-messages"></div>
+        <div id="ai-chat-input-area">
+            <input type="text" id="ai-chat-input" placeholder="Ask me anything..." onkeypress="if(event.key==='Enter') sendMessage()">
+            <button id="ai-chat-send" onclick="sendMessage()">
+                <i class="fas fa-paper-plane"></i>
+            </button>
+        </div>
+    </div>
+</div>
+
+<script>
+    function toggleChat() {
+        document.getElementById('ai-chat-window').classList.toggle('active');
+    }
+
+    function addMessage(text, type) {
+        const messagesDiv = document.getElementById('ai-chat-messages');
+        const msgDiv = document.createElement('div');
+        msgDiv.className = type + '-msg';
+        msgDiv.textContent = text;
+        messagesDiv.appendChild(msgDiv);
+        messagesDiv.scrollTop = messagesDiv.scrollHeight;
+    }
+
+    function sendMessage() {
+        const input = document.getElementById('ai-chat-input');
+        const message = input.value.trim();
+        if (!message) return;
+        addMessage(message, 'user');
+        input.value = '';
+        socket.emit('ai_message', { message: message });
+    }
+
+    // Listen for AI responses
+    socket.on('ai_response', function(data) {
+        addMessage(data.message, 'ai');
+    });
+</script>
 </body>
 </html>
