@@ -1067,10 +1067,13 @@ def mark_sold(product_id):
 import google.generativeai as genai
 
 # --- AI CHATBOT (Gemini) ---
+import google.generativeai as genai
+
+# --- AI CHATBOT (Gemini) ---
 genai.configure(api_key=os.environ.get('GEMINI_API_KEY'))
 
-# Use a model that works with the free tier
-MODEL_NAME = 'gemini-1.5-flash'  # or 'gemini-2.0-flash-lite' if you prefer
+# Use the current free model (gemini‑2.5‑flash‑preview)
+MODEL_NAME = 'gemini-2.5-flash-preview'
 model = genai.GenerativeModel(MODEL_NAME)
 
 @socketio.on('ai_message')
@@ -1079,7 +1082,6 @@ def handle_ai_message(data):
     if not user_message.strip():
         return
 
-    # If no API key is set, respond with a clear message
     if not os.environ.get('GEMINI_API_KEY'):
         socketio.emit('ai_response', {
             'message': "⚠️ AI not configured. Please set the GEMINI_API_KEY environment variable."
@@ -1087,7 +1089,6 @@ def handle_ai_message(data):
         return
 
     try:
-        # Context to keep answers helpful and localised
         prompt = (
             "You are a helpful assistant on Kilgoris News, a community news website for Kilgoris, Kenya. "
             "Answer the user's question in a friendly, concise way. "
@@ -1102,12 +1103,11 @@ def handle_ai_message(data):
         )
         reply = response.text.strip()
     except Exception as e:
-        # Send the actual error back to the chat so you can see it
         reply = f"❌ Error: {str(e)}"
         app.logger.error(f"Gemini error: {e}")
 
     socketio.emit('ai_response', {'message': reply}, room=request.sid)
-    
+
 # --- INIT DB ---
 with app.app_context():
     db.create_all()
