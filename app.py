@@ -1068,7 +1068,10 @@ import google.generativeai as genai
 
 # --- AI CHATBOT (Gemini) ---
 genai.configure(api_key=os.environ.get('GEMINI_API_KEY'))
-model = genai.GenerativeModel('gemini-2.0-flash')
+
+# Use a model that works with the free tier
+MODEL_NAME = 'gemini-1.5-flash'  # or 'gemini-2.0-flash-lite' if you prefer
+model = genai.GenerativeModel(MODEL_NAME)
 
 @socketio.on('ai_message')
 def handle_ai_message(data):
@@ -1076,13 +1079,19 @@ def handle_ai_message(data):
     if not user_message.strip():
         return
 
+    # If no API key is set, respond with a clear message
+    if not os.environ.get('GEMINI_API_KEY'):
+        socketio.emit('ai_response', {
+            'message': "⚠️ AI not configured. Please set the GEMINI_API_KEY environment variable."
+        }, room=request.sid)
+        return
+
     try:
-        # Add context to make the AI friendly and relevant
+        # Context to keep answers helpful and localised
         prompt = (
             "You are a helpful assistant on Kilgoris News, a community news website for Kilgoris, Kenya. "
             "Answer the user's question in a friendly, concise way. "
-            "If they ask about news, you can mention recent headlines if you know them. "
-            "Keep answers under 3 sentences unless the user asks for more detail."
+            "If you don't know something, say so politely."
         )
         response = model.generate_content(
             f"{prompt}\n\nUser: {user_message}",
@@ -1093,12 +1102,12 @@ def handle_ai_message(data):
         )
         reply = response.text.strip()
     except Exception as e:
-        reply = "Sorry, I'm having trouble right now. Please try again later."
+        # Send the actual error back to the chat so you can see it
+        reply = f"❌ Error: {str(e)}"
         app.logger.error(f"Gemini error: {e}")
 
-    # Emit the response back to the same user
     socketio.emit('ai_response', {'message': reply}, room=request.sid)
-
+    
 # --- INIT DB ---
 with app.app_context():
     db.create_all()
