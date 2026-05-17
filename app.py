@@ -1067,13 +1067,10 @@ def mark_sold(product_id):
 import google.generativeai as genai
 
 # --- AI CHATBOT (Gemini) ---
-import google.generativeai as genai
-
-# --- AI CHATBOT (Gemini) ---
 genai.configure(api_key=os.environ.get('GEMINI_API_KEY'))
 
-# Use the current free model (gemini‑2.5‑flash‑preview)
-MODEL_NAME = 'gemini-2.5-flash-preview'
+# Use the stable Gemini 2.5 Flash model (free tier)
+MODEL_NAME = 'gemini-2.5-flash'
 model = genai.GenerativeModel(MODEL_NAME)
 
 @socketio.on('ai_message')
